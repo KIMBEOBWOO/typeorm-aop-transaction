@@ -1,0 +1,29 @@
+{
+  "name": "typeorm-aop-transaction",
+  "version": "1.0.0",
+  "description": "Modules that allow transactions of TypeORM 0.3 version to be applied from an AOP perspective",
+  "main": "dist/index.ts",
+  "scripts": {
+    "lint": "tslint -p tsconfig.json -c tslint.json ./src/**/*.ts",
+    "clean": "rm -rf ./dist",
+    "build": "npm run clean && tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KIMBEOBWOO/typeorm-aop-transaction.git"
+  },
+  "keywords": [
+    "transaction",
+    "nestjs",
+    "aop",
+    "typeorm",
+    "cls"
+  ],
+  "author": "KIMBEOBWOO",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/KIMBEOBWOO/typeorm-aop-transaction/issues"
+  },
+  "homepage": "https://github.com/KIMBEOBWOO/typeorm-aop-transaction#readme"
+}
