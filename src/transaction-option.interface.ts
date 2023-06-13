@@ -3,6 +3,11 @@ import { Propagation } from './propagation';
 
 export interface TransactionOptions {
   /**
+   * 데이터베이스 커넥션 이름
+   */
+  connectionName?: string;
+
+  /**
    * 트랜잭션 고립 수준 설정 옵션
    * @default 'READ COMMITTED' 커밋된 내역만 읽음
    */

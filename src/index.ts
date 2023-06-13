@@ -1,5 +1,9 @@
 export { ClsHookedTransactinoDecorator } from './cls-hooked-transaction.decorator';
+export { AlsTransactionDecorator } from './als-transaction.decorator';
+export { AlsStore } from './als-store.interface';
 export { PROPAGATION } from './propagation';
 export { TransactionOptions } from './transaction-option.interface';
 export { Transactional } from './transactional.decorator';
 export { BaseRepository } from './base.repository';
+export { TransactionModule } from './transaciton.module';
+export { TransactionMiddleware } from './transaction.middleware';

@@ -1,29 +1,24 @@
 import { Logger } from '@nestjs/common';
 import { createNamespace, getNamespace, Namespace } from 'cls-hooked';
 import { Aspect, LazyDecorator, WrapParams } from '@toss/nestjs-aop';
-import { DataSource, EntityManager, QueryRunner, Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 
 import { TransactionOptions } from './transaction-option.interface';
 import { Propagation } from './propagation';
 import { TRANSACTION_DECORATOR } from './transaction-decorator.symbol';
+import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
+import { TypeORMTransactionService } from './transaction.service';
 
 @Aspect(TRANSACTION_DECORATOR)
 export class ClsHookedTransactinoDecorator
   implements LazyDecorator<any, TransactionOptions>
 {
-  /**
-   * 트랜잭션 네임스페이스 이름
-   */
-  static readonly NAMESPACE_NAME = 'TX';
-  /**
-   * 트랜잭션 컨텍스트 쿼리러너 키 접두사
-   */
-  static readonly QUERY_RUNNER_PRERIX = 'queryRunner';
+  static readonly NAMESPACE_NAME = 'TX'; // 트랜잭션 네임스페이스 이름
+  static readonly QUERY_RUNNER_PRERIX = 'queryRunner'; // 트랜잭션 컨텍스트 쿼리러너 키 접두사
 
-  constructor(private readonly dataSource: DataSource) {
-    // cls-hooked context 초기화
+  constructor(private readonly transactionService: TypeORMTransactionService) {
     getNamespace(ClsHookedTransactinoDecorator.NAMESPACE_NAME) ||
-      createNamespace(ClsHookedTransactinoDecorator.NAMESPACE_NAME);
+      createNamespace(ClsHookedTransactinoDecorator.NAMESPACE_NAME); // cls-hooked context 초기화
   }
 
   /**
@@ -33,9 +28,18 @@ export class ClsHookedTransactinoDecorator
     return async (...args: any) => {
       const txNamespace = ClsHookedTransactinoDecorator.getTxNamespace();
 
+      // 커넥션 선택 설정
+      const connectionName = metadata?.connectionName;
+
       // 전파 옵션 설정
       const propagation: Propagation =
         metadata?.propagation === undefined ? 'REQUIRED' : metadata.propagation;
+
+      // 고립 수준 설정
+      const isolationLevel: IsolationLevel =
+        metadata?.isolationLevel === undefined
+          ? 'READ COMMITTED'
+          : metadata?.isolationLevel;
 
       // 트랜잭션 네임스페이스로 위임 대상 메서드 랩핑
       return txNamespace.runAndReturn(async () => {
@@ -43,7 +47,7 @@ export class ClsHookedTransactinoDecorator
           // 쿼리러너 설정
           const queryRunner: QueryRunner =
             ClsHookedTransactinoDecorator.getTxQueryRunner(txNamespace) ||
-            this.dataSource.createQueryRunner(); // 존재하지 않는 경우 새로 생성해 초기화
+            this.transactionService.createConnection(connectionName); // 존재하지 않는 경우 새로 생성해 초기화
 
           // 트랜잭션 진행 여부 조회
           const isTransactionActive = queryRunner.isTransactionActive;
@@ -52,81 +56,41 @@ export class ClsHookedTransactinoDecorator
             // 이미 진행 중인 트랜잭션이 존재, 참여
             Logger.debug(methodName, 'start ' + propagation + ' origin');
 
-            return this.runInTransaction(method, args);
+            return this.transactionService.runInTransaction(method, args);
           } else {
             // 진행 중인 트랜잭션이 없음, 생성
             Logger.debug(methodName, 'start ' + propagation + ' new');
 
-            return this.wrapByTransaction(
+            // 진행 중인 트랜잭션이 없으므로 설정
+            ClsHookedTransactinoDecorator.setTxQueryRunner(
+              queryRunner,
+              txNamespace,
+            );
+
+            return this.transactionService.wrapByTransaction(
               method,
               args,
-              txNamespace,
               queryRunner,
+              isolationLevel,
             );
           }
         } else if (propagation === 'REQUIRES_NEW') {
           // 진행 중인 모든 트랜잭션을 보류하고 새롭게 시작
           Logger.debug(methodName, 'start ' + propagation + ' new');
 
-          const queryRunner = this.dataSource.createQueryRunner();
-          return this.wrapByTransaction(method, args, txNamespace, queryRunner);
+          const queryRunner =
+            this.transactionService.createConnection(connectionName);
+          return this.transactionService.wrapByTransaction(
+            method,
+            args,
+            queryRunner,
+            isolationLevel,
+          );
         } else {
           throw new Error('사용할 수 없는 전파 옵션 ' + metadata?.propagation);
         }
       });
     };
-  }
-
-  /**
-   * 트랜잭션내에서 함수 실행
-   * @param method 타깃 메서드
-   * @param args 타깃 메서드 호출 파라미터
-   * @returns 타깃 메서드 호출 결과 (return value of method)
-   *
-   * @description 해당 메서드는 호출시 별도의 트랜잭션 경계 설정 없이 모든 작업을 타깃 메서드에게 위임한다.
-   */
-  private async runInTransaction(method: any, args: any[]) {
-    const result = await method(...args);
-
-    return result;
-  }
-
-  /**
-   * 새 트랜잭션내에서 함수 실행
-   * @param method 타깃 메서드
-   * @param args 타깃 메서드 호출 파라미터
-   * @param txNamespace 트랜잭션 네임스페이스
-   * @param queryRunner 트랜잭션 실행할 커넥션 쿼리러너
-   * @returns 타깃 메서드 호출 결과 (return value of method)
-   *
-   * @description 해당 메서드는 호출시 타깃 메서드에 트랜잭션 경계 설정 부가기능을 추가하고 핵심 기능은 타깃 메서드에게 위임한다.
-   */
-  private async wrapByTransaction(
-    method: any,
-    args: any[],
-    txNamespace: Namespace,
-    queryRunner: QueryRunner,
-  ) {
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      // 진행 중인 트랜잭션이 없으므로 설정
-      ClsHookedTransactinoDecorator.setTxQueryRunner(queryRunner, txNamespace);
-
-      console.log(ClsHookedTransactinoDecorator.getTxNamespace());
-
-      const result = await method(...args);
-
-      await queryRunner.commitTransaction();
-
-      return result;
-    } catch (e) {
-      await queryRunner.rollbackTransaction();
-      throw e;
-    } finally {
-      await queryRunner.release();
-    }
   }
 
   /**
@@ -191,16 +155,14 @@ export class ClsHookedTransactinoDecorator
       get() {
         const queryRunner = ClsHookedTransactinoDecorator.getTxQueryRunner();
 
-        console.log(ClsHookedTransactinoDecorator.getTxQueryRunner());
-
         if (queryRunner === undefined) {
           throw new Error('쿼리러너가 존재하지 않음. 쿼리 실행 불가능');
         }
 
         return queryRunner.manager;
       },
-      set(manager: EntityManager) {
-        this.manager = manager;
+      set(manager: any) {
+        this._manager = manager;
       },
     });
   }

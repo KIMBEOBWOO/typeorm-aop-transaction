@@ -1,6 +1,6 @@
 {
   "name": "typeorm-aop-transaction",
-  "version": "1.0.2",
+  "version": "1.1.5",
   "description": "Modules that allow transactions of TypeORM 0.3 version to be applied from an AOP perspective",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -19,8 +19,7 @@
     "url": "git+https://github.com/KIMBEOBWOO/typeorm-aop-transaction.git"
   },
   "engines": {
-    "node": ">=16",
-    "pnpm": "^7"
+    "node": ">=16"
   },
   "keywords": [
     "transaction",
@@ -43,10 +42,29 @@
     "@types/cls-hooked": "^4.3.3",
     "cls-hooked": "^4.2.2"
   },
+  "peerDependencies": {
+    "@toss/nestjs-aop": "^2.0.2",
+    "@types/cls-hooked": "^4.3.3",
+    "cls-hooked": "^4.2.2",
+    "typeorm": "^0.3.16",
+    "@nestjs/common": "^9.3.9",
+    "@nestjs/core": "^9.3.9",
+    "@nestjs/testing": "^9",
+    "@types/jest": "^28.1.8",
+    "@types/node": "^16.18.6",
+    "@types/supertest": "^2.0.11",
+    "@typescript-eslint/eslint-plugin": "~5.42.1",
+    "@typescript-eslint/parser": "~5.42.1",
+    "eslint": "8.22.0",
+    "eslint-plugin-unused-imports": "^2.0.0",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.6.0",
+    "typescript": "~4.7.4"
+  },
   "devDependencies": {
     "typeorm": "^0.3.16",
-    "@nestjs/common": "^9",
-    "@nestjs/core": "^9",
+    "@nestjs/common": "^9.3.9",
+    "@nestjs/core": "^9.3.9",
     "@nestjs/testing": "^9",
     "@types/jest": "^28.1.8",
     "@types/node": "^16.18.6",
