@@ -1,5 +1,5 @@
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
-import { Propagation } from './propagation';
+import { Propagation } from '../const/propagation';
 
 export interface TransactionOptions {
   /**

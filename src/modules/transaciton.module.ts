@@ -1,20 +1,26 @@
-import { DynamicModule, Global, Module } from '@nestjs/common';
+import { DynamicModule, Module } from '@nestjs/common';
 import { DiscoveryModule, DiscoveryService } from '@nestjs/core';
 import { AopModule } from '@toss/nestjs-aop';
-import { AlsTransactionDecorator } from './als-transaction.decorator';
+import { AlsTransactionDecorator } from '..';
 import { AlsModule } from './als.module';
-import { DataSourceMapService } from './data-source-map.service';
-import { TransactionModuleOption } from './transaction-module-option.interface';
-import { TypeORMTransactionService } from './transaction.service';
+import { DataSourceMapService } from '../providers/data-source-map.service';
+import { TRANSACTION_MODULE_OPTION } from '../symbols/transaciton-module-option.symbol';
+import { TransactionLogger } from '../providers/transaction.logger';
+import { TransactionModuleOption } from '../interfaces/transaction-module-option.interface';
+import { TypeORMTransactionService } from '../providers/transaction.service';
 
 @Module({
-  imports: [DiscoveryModule, AopModule, AlsModule],
+  imports: [DiscoveryModule, AlsModule],
 })
 export class TransactionModule {
   static regist(options: TransactionModuleOption): DynamicModule {
     return {
       module: TransactionModule,
       providers: [
+        {
+          provide: TRANSACTION_MODULE_OPTION,
+          useValue: options,
+        },
         {
           provide: DataSourceMapService,
           useFactory: (discoveryService: DiscoveryService) => {
@@ -32,9 +38,10 @@ export class TransactionModule {
           },
           inject: [DataSourceMapService],
         },
+        TransactionLogger,
         AlsTransactionDecorator,
       ],
-      exports: [AlsTransactionDecorator, AopModule, AlsModule],
+      exports: [AlsTransactionDecorator, TransactionLogger],
     };
   }
 }

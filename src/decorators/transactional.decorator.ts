@@ -1,6 +1,6 @@
 import { createDecorator } from '@toss/nestjs-aop';
-import { TRANSACTION_DECORATOR } from './transaction-decorator.symbol';
-import { TransactionOptions } from './transaction-option.interface';
+import { TRANSACTION_DECORATOR } from '../symbols/transaction-decorator.symbol';
+import { TransactionOptions } from '../interfaces/transaction-option.interface';
 
 /**
  * 트랜잭션 데코레이터 (메서드용)

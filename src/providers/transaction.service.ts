@@ -1,6 +1,7 @@
 import { QueryRunner } from 'typeorm';
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
 import { DataSourceMapService } from './data-source-map.service';
+import { NotRollbackError } from '../exceptions/not-rollback.error';
 
 export class TypeORMTransactionService {
   constructor(private readonly dataSourceMapService: DataSourceMapService) {}
@@ -45,6 +46,7 @@ export class TypeORMTransactionService {
     args: any[],
     queryRunner: QueryRunner,
     isolationLevel: IsolationLevel,
+    isNested?: boolean,
   ) {
     await queryRunner.connect();
     await queryRunner.startTransaction(isolationLevel);
@@ -56,10 +58,15 @@ export class TypeORMTransactionService {
 
       return result;
     } catch (e) {
-      await queryRunner.rollbackTransaction();
+      if (e instanceof NotRollbackError) {
+        // 상위에 NestedTransacdtion 이 있는 경우 롤백하지 않음
+        await queryRunner.commitTransaction();
+      } else {
+        await queryRunner.rollbackTransaction();
+      }
       throw e;
     } finally {
-      await queryRunner.release();
+      !isNested && (await queryRunner.release());
     }
   }
 }
