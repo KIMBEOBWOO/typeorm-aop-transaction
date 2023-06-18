@@ -1,18 +1,6 @@
-# typeorm-transactional-cls-hooked
+## O**utline**
 
-[![npm version](http://img.shields.io/npm/v/typeorm-transactional-cls-hooked.svg?style=flat)](https://npmjs.org/package/typeorm-aop-transaction 'View this project on npm')
-
-# typeorm-aop-transaction
-
-Assign: 법우
-Created time: 2023년 6월 13일 오후 11:38
-Status: NestJs
-
-## Outline
-
-The library provides functionality for setting TypeORM Transaction boundaries through AOP in Nest.js. Inspired by a non-invasive transactional approach to business logic using the Spring Framework's `@TransactionalDecorator.`
-
-There is a good library called [typeorm-transactional-cls-hooked](https://www.npmjs.com/package/typeorm-transactional-cls-hooked) but it is not compatible with `typeorm 0.3^` or higher.
+In Nest.js, the library allows for the establishment of TypeORM Transaction boundaries via AOP. This approach to transactional business logic takes inspiration from the Spring Framework's non-invasive methodology. There is a good library called [typeorm-transactional-cls-hooked](https://www.npmjs.com/package/typeorm-transactional-cls-hooked) but it is not compatible with `typeorm 0.3^` or higher.
 
 We used [@toss/aop](https://www.npmjs.com/package/@toss/nestjs-aop) for AOP implementation and it is compatible with custom AOP decoder implemented using that library. In addition, much of the code in the [typeorm-transactional-cls-hooked](https://www.npmjs.com/package/typeorm-transactional-cls-hooked) library was referenced to implement the Spring Transaction Synchronization Pool.
 
@@ -162,13 +150,102 @@ export class UserService {
 
 The currently supported proposals are "REQUIRES_NEW", "REQUIRED", and isolationLevel supports all isolation levels provided at the TypeORM level.
 
+## Propagations
+
+Currently supported transaction propagation levels are REQUIRES_NEW, REQUIRED, NESTED, and NEVER.
+
+### REQUIRES_NEW
+
+`REQUIRES_NEW` propagation level starts a new transaction regardless of the existence of a parent transaction. Moreover, this newly started transaction is committed or rolled back independently of the nested or parent transaction. Here is an example for better understanding.
+
+`REQUIRES_NEW` propagation level starts a new transaction regardless of the existence of a parent transaction. Moreover, this newly started transaction is committed or rolled back independently of the nested or parent transaction. Here is an example for better understanding.
+
+In the `create` method that has the `REQUIRES_NEW` propagation level, the `create2` method with the `REQUIRED` propagation level is being executed and an error occurs during the execution of the `create2` method. `create2` is **rolled back** and `create` is **committed**, and as a result, the **Error is thrown out of the Service Class**.
+
+```bash
+[Nest] 23598  - 2023. 06. 18. 오후 5:56:06   DEBUG [Transactional] 1687078566046|POSTGRES_CONNECTION|**create**|READ COMMITTED|**REQUIRES_NEW** - New Transaction
+**query: START TRANSACTION
+query: SET TRANSACTION ISOLATION LEVEL READ COMMITTED**
+query: INSERT INTO "user"("created_at", "updated_at", "deleted_at", "id", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["2ce-26531b27f5e8","wjdrms15!","qjqdn1568@naver.com","+82-10-3252-2568"]
+[Nest] 23598  - 2023. 06. 18. 오후 5:56:06   DEBUG [Transactional] 1687078566046|POSTGRES_CONNECTION|**create2**|READ COMMITTED|**REQUIRED** - New Transaction
+
+**query: START TRANSACTION
+query: SET TRANSACTION ISOLATION LEVEL READ COMMITTED**
+query: INSERT INTO "user"("created_at", "updated_at", "deleted_at", "id", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["f4b-55aadba0508b","wjdrms15!","2222 qjqdn1568@naver.com","+82-10-3252-2568"]
+**query: ROLLBACK
+
+query: COMMIT**
+[Nest] 23598  - 2023. 06. 18. 오후 5:56:06   ERROR [ExceptionsHandler] test
+```
+
+In this case, the method `create2` with the `REQUIRES_NEW` propagation level is being executed within the `create` method with the `REQUIRED` propagation level, and an error occurs during the execution of the `create2` method. In this case, the result of the `create2` method with the `REQUIRES_NEW` propagation attribute is **committed** instead of being **rolled back.**
+
+```bash
+[Nest] 24146  - 2023. 06. 18. 오후 6:06:06   DEBUG [Transactional] 1687079166691|POSTGRES_CONNECTION|**create**|READ COMMITTED|**REQUIRED** - New Transaction
+**query: START TRANSACTION**
+**query: SET TRANSACTION ISOLATION LEVEL READ COMMITTED**
+query: INSERT INTO "user"("created_at", "updated_at", "deleted_at", "id", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["89f-ff92d6554359","wjdrms15!","qjqdn1568@naver.com","+82-10-3252-2568"]
+
+[Nest] 24146  - 2023. 06. 18. 오후 6:06:06   DEBUG [Transactional] 1687079166691|POSTGRES_CONNECTION|**create2**|READ COMMITTED|**REQUIRES_NEW** - New Transaction
+**query: START TRANSACTION
+query: SET TRANSACTION ISOLATION LEVEL READ COMMITTED**
+query: INSERT INTO "user"("created_at", "updated_at", "deleted_at", "id", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["7a3-cce699b7f065","wjdrms15!","2222 qjqdn1568@naver.com","+82-10-3252-2568"]
+**query: COMMIT**
+
+**query: ROLLBACK**
+[Nest] 24146  - 2023. 06. 18. 오후 6:06:06   ERROR [ExceptionsHandler] test
+```
+
+### REQUIRED
+
+The default propagation level is `REQUIRED`. If set to `REQUIRED`, transaction boundary settings depend heavily on the existence of a parent transaction. If there is already an ongoing transaction, it participates in the transaction without starting a new one. If there is no ongoing transaction, a new transaction is started.
+
+In the `create` method, which has been set to a `REQUIRED` propagation level, an error occurs while the `create2` method, which has been set to a `REQUIRED` propagation level, is executed. Since they behave like a single transaction, both are rolled back.
+
+```bash
+[Nest] 24304  - 2023. 06. 18. 오후 6:10:53   DEBUG [Transactional] 1687079453250|POSTGRES_CONNECTION|create|READ COMMITTED|REQUIRED - New Transaction
+**query: START TRANSACTION
+query: SET TRANSACTION ISOLATION LEVEL READ COMMITTED**
+query: INSERT INTO "user"("created_at", "updated_at", "deleted_at", "id", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["4ed-be402112bcde","wjdrms15!","qjqdn1568@naver.com","+82-10-3252-2568"]
+[Nest] 24304  - 2023. 06. 18. 오후 6:10:53   DEBUG [Transactional] 1687079453250|POSTGRES_CONNECTION|create2|READ COMMITTED|REQUIRED - Join Transaction
+query: INSERT INTO "user"("created_at", "updated_at", "deleted_at", "id", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["2cd-d3159145e24a","wjdrms15!","2222 qjqdn1568@naver.com","+82-10-3252-2568"]
+
+**query: ROLLBACK**
+[Nest] 24304  - 2023. 06. 18. 오후 6:10:53   ERROR [ExceptionsHandler] test
+```
+
+### NESTED
+
+This propagation option is very similar to `REQUIRED`, but there is a difference when the parent transaction exists. In this case, it does not simply participate in the transaction, but sets a savepoint before executing its query. If an error occurs, it **rolls back** only up to the **savepoint it set,** so the **parent transaction is** **committed** normally.
+
+If there is a **NESTED** propagation method `create2` inside the parent method `create` with the `REQUIRED` propagation level, and an error occurs during the execution of `create2`, `create2` saves a **savepoint** before executing its query. If an error occurs, it rolls back only up to the **savepoint** it set, so the insert by the parent method is normally committed.
+
+```bash
+[Nest] 24502  - 2023. 06. 18. 오후 6:15:43   DEBUG [Transactional] 1687079743116|POSTGRES_CONNECTION|create|READ COMMITTED|REQUIRED - New Transaction
+query: START TRANSACTION
+query: SET TRANSACTION ISOLATION LEVEL READ COMMITTED
+query: INSERT INTO "user"("created_at", "updated_at", "deleted_at", "id", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["615-1bbae146a294","wjdrms15!","qjqdn1568@naver.com","+82-10-3252-2568"]
+[Nest] 24502  - 2023. 06. 18. 오후 6:15:43   DEBUG [Transactional] 1687079743116|POSTGRES_CONNECTION|create2|READ COMMITTED|NESTED - Make savepiont, Wrap Transaction
+
+query: SAVEPOINT typeorm_1
+query: INSERT INTO "user"("created_at", "updated_at", "deleted_at", "id", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["1b9-d065db5d0bc4","wjdrms15!","2222 qjqdn1568@naver.com","+82-10-3252-2568"]
+**query: ROLLBACK TO SAVEPOINT typeorm_1**
+
+query: COMMIT
+[Nest] 24502  - 2023. 06. 18. 오후 6:15:43   ERROR [ExceptionsHandler] test
+```
+
+### NEVER
+
+It will be updated later.
+
 ## **Future Support Plan**
 
-- add propagation option : NESTED, NOT_SUPPORTED, SUPPORTS, NEVER, MANDATORY
+- add propagation option : ~~NESTED~~, NOT_SUPPORTED, SUPPORTS, ~~NEVER~~, MANDATORY
 - add Unit Test
 - add integration test
 - add Rollback, Commit Callback Hooks
-- remove Loggers
+- ~~remove Loggers~~
 
 ## R**eferenced Libraries**
 
