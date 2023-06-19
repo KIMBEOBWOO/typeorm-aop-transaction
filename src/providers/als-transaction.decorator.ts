@@ -9,12 +9,15 @@ import { TypeORMTransactionService } from './transaction.service';
 import { AlsStore } from '../interfaces/als-store.interface';
 import { NotRollbackError } from '../exceptions/not-rollback.error';
 import { TransactionLogger } from './transaction.logger';
+import { Inject } from '@nestjs/common';
+import { ALS_SERVICE } from '../symbols/als-service.symbol';
 
 @Aspect(TRANSACTION_DECORATOR)
 export class AlsTransactionDecorator
   implements LazyDecorator<any, TransactionOptions>
 {
   constructor(
+    @Inject(ALS_SERVICE)
     private readonly alsService: AsyncLocalStorage<AlsStore>,
     private readonly transactionService: TypeORMTransactionService,
     private readonly logger: TransactionLogger,

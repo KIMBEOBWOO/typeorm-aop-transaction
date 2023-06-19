@@ -1,1 +1,9 @@
-
+src
+tests
+.editorconfig
+tsconfig.json
+.prettierrc
+docker-compose.yaml
+jest.config.js
+tslint.json
+*.tgz
