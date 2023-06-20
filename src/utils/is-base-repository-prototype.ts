@@ -2,6 +2,8 @@ import { BaseRepository } from '../base.repository';
 import { BaseRepositoryConstructor } from '../interfaces/base-repository-constructor.interface';
 
 export const isBaseRepositoryPrototype = (
-  target: any,
+  target: unknown,
 ): target is BaseRepositoryConstructor =>
-  Reflect.getPrototypeOf(target) === BaseRepository<any>;
+  typeof target === 'function' && target !== null
+    ? Reflect.getPrototypeOf(target) === BaseRepository
+    : false;
