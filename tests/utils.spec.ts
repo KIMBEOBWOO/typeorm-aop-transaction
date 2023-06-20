@@ -1,5 +1,7 @@
+import { Entity, EntitySchema, getMetadataArgsStorage } from 'typeorm';
 import { BaseRepository } from '../src/base.repository';
 import { isBaseRepositoryPrototype } from '../src/utils/is-base-repository-prototype';
+import { isTypeORMEntity } from '../src/utils/is-typeorm-entity';
 
 describe('Utility Unit Test', () => {
   describe('isBaseRepositoryPrototype', () => {
@@ -24,6 +26,29 @@ describe('Utility Unit Test', () => {
         expect(isBaseRepositoryPrototype(testData.target)).toBe(
           testData.result,
         );
+      }
+    });
+  });
+
+  describe('isTypeORMEntity', () => {
+    @Entity('test_table')
+    class TestEntity {}
+
+    class NotEntity {}
+
+    it('If the class has @Entity decorator comes as an input, it must return true.', () => {
+      const testDataList = [
+        { target: TestEntity, result: true },
+        { target: NotEntity, result: false },
+        { target: { a: 1, b: 2 }, result: false },
+        { target: 1, result: false },
+        { target: '1', result: false },
+        { target: null, result: false },
+        { target: true, result: false },
+      ];
+
+      for (const testData of testDataList) {
+        expect(isTypeORMEntity(testData.target)).toBe(testData.result);
       }
     });
   });
