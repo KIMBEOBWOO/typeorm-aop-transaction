@@ -1,5 +1,6 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { DiscoveryService } from '@nestjs/core';
+import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { DataSource } from 'typeorm';
 import { TransactionModuleOption } from '../interfaces/transaction-module-option.interface';
 import { TRANSACTION_MODULE_OPTION } from '../symbols/transaciton-module-option.symbol';
@@ -19,21 +20,18 @@ export class DataSourceMapService implements OnModuleInit {
 
   public onModuleInit() {
     // find DataSource provider
-    const dataSourceProviders = this.discoveryService
-      .getProviders()
-      .filter(
-        (provider) =>
-          // TypeORM DataSource 인스턴스 필터링
-          provider.instance instanceof DataSource,
-      )
-      .map((provider) => provider.instance);
+    const dataSourceProviders = this.discoveryService.getProviders().filter(
+      (provider) =>
+        // TypeORM DataSource 인스턴스 필터링
+        provider.instance instanceof DataSource,
+    );
 
     // init dataSourceMap
     this.dataSourceMap = dataSourceProviders.reduce((prev, curr) => {
-      prev[curr.name] = curr;
+      prev[curr.name] = curr.instance;
 
       return prev;
-    }, {});
+    }, {} as Record<string, DataSource | undefined>);
   }
 
   /**

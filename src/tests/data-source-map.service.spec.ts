@@ -1,4 +1,6 @@
+import { Provider } from '@nestjs/common';
 import { DiscoveryService } from '@nestjs/core';
+import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import { TransactionModuleOption } from '../interfaces/transaction-module-option.interface';
@@ -17,12 +19,29 @@ describe('DataSourceMapService', () => {
   let option: TransactionModuleOption;
 
   beforeEach(async () => {
+    const providerList: InstanceWrapper<any>[] = [
+      {
+        name: 'TEST_DATA_SOURCE_1',
+        instance: new DataSource({ type: 'postgres' }),
+      } as any,
+      {
+        name: 'NOT_DATA_SOURCE_1',
+        instance: { a: 1, b: 2 },
+      } as any,
+      {
+        name: 'TEST_DATA_SOURCE_2',
+        instance: new DataSource({ type: 'mysql' }),
+      } as any,
+    ];
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TestDataSourceMapService,
         {
           provide: DiscoveryService,
-          useValue: getMockDiscoveryService(),
+          useValue: getMockDiscoveryService({
+            getProviders: jest.fn().mockReturnValue(providerList),
+          }),
         },
         {
           provide: TRANSACTION_MODULE_OPTION,
@@ -44,13 +63,47 @@ describe('DataSourceMapService', () => {
 
   describe('onModuleInit', () => {
     it('DataSource instances registered as providers should be stored in the local variable dataSourceMap', () => {
-      jest.spyOn(discoveryService, 'getProviders').mockReturnValue([]);
+      service.onModuleInit();
 
-      expect(service.dataSourceMap).toStrictEqual({});
+      expect(service.dataSourceMap['TEST_DATA_SOURCE_1']).toBeInstanceOf(
+        DataSource,
+      );
+      expect(service.dataSourceMap['TEST_DATA_SOURCE_2']).toBeInstanceOf(
+        DataSource,
+      );
     });
   });
 
   describe('getDataSource', () => {
-    //
+    it('If connectionName is not undefined, you must import and return the corresponding DataSource instance from the dataSourceMap', () => {
+      service.dataSourceMap = {
+        TEST_DATA_SOURCE_1: 1,
+        TEST_DATA_SOURCE_2: 2,
+      } as any;
+
+      const dataSource = service.getDataSource('TEST_DATA_SOURCE_1');
+
+      expect(dataSource).toBe(1);
+    });
+
+    it('Returns an Error if connectionName does not have a corresponding DataSource', () => {
+      service.dataSourceMap = {};
+
+      expect(() => service.getDataSource('TEST_DATA_SOURCE_1')).toThrowError(
+        new Error(`DataSource name "${'TEST_DATA_SOURCE_1'}" is not exists`),
+      );
+    });
+
+    it('If connectionName is undefined, use defaultConnectionName as the key value', () => {
+      service.dataSourceMap = {
+        TEST_DATA_SOURCE_1: 1,
+        TEST_DATA_SOURCE_2: 2,
+        TEST_DEFAULT_CONNECTION_NAME: 3, // should be selected
+      } as any;
+
+      const dataSource = service.getDataSource();
+
+      expect(dataSource).toBe(3);
+    });
   });
 });
