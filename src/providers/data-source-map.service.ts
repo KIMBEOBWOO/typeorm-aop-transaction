@@ -1,16 +1,21 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { DiscoveryService } from '@nestjs/core';
 import { DataSource } from 'typeorm';
+import { TransactionModuleOption } from '../interfaces/transaction-module-option.interface';
+import { TRANSACTION_MODULE_OPTION } from '../symbols/transaciton-module-option.symbol';
 
 @Injectable()
 export class DataSourceMapService implements OnModuleInit {
   // DataSource key-value store
-  private dataSourceMap!: Record<string, DataSource | undefined>;
+  protected dataSourceMap: Record<string, DataSource | undefined>;
 
   constructor(
     private readonly discoveryService: DiscoveryService,
-    private readonly defaultConnectionName: string,
-  ) {}
+    @Inject(TRANSACTION_MODULE_OPTION)
+    private readonly option: TransactionModuleOption,
+  ) {
+    this.dataSourceMap = {};
+  }
 
   public onModuleInit() {
     // find DataSource provider
@@ -38,7 +43,7 @@ export class DataSourceMapService implements OnModuleInit {
    */
   public getDataSource(connectionName?: string): DataSource {
     const dataSource: DataSource | undefined =
-      this.dataSourceMap[connectionName || this.defaultConnectionName];
+      this.dataSourceMap[connectionName || this.option.defaultConnectionName];
 
     if (dataSource === undefined) {
       throw new Error(`DataSource name "${connectionName}" is not exists`);

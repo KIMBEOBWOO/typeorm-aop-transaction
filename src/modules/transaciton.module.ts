@@ -37,10 +37,7 @@ export class TransactionModule {
         {
           provide: DataSourceMapService,
           useFactory: (discoveryService: DiscoveryService) => {
-            return new DataSourceMapService(
-              discoveryService,
-              options.defaultConnectionName,
-            );
+            return new DataSourceMapService(discoveryService, options);
           },
           inject: [DiscoveryService],
         },

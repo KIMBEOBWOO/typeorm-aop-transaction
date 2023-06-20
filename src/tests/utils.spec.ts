@@ -1,7 +1,7 @@
-import { Entity, EntitySchema, getMetadataArgsStorage } from 'typeorm';
-import { BaseRepository } from '../src/base.repository';
-import { isBaseRepositoryPrototype } from '../src/utils/is-base-repository-prototype';
-import { isTypeORMEntity } from '../src/utils/is-typeorm-entity';
+import { Entity } from 'typeorm';
+import { BaseRepository } from '../base.repository';
+import { isBaseRepositoryPrototype } from '../utils/is-base-repository-prototype';
+import { isTypeORMEntity } from '../utils/is-typeorm-entity';
 
 describe('Utility Unit Test', () => {
   describe('isBaseRepositoryPrototype', () => {

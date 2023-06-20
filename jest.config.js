@@ -1,5 +1,5 @@
 module.exports = {
-  roots: ['tests'],
+  roots: ['src'],
   transform: { '^.+\\.ts$': 'ts-jest' },
   testMatch: ['**/*.spec.ts'],
   globals: {
