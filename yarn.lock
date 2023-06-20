@@ -626,12 +626,12 @@
     path-to-regexp "3.2.0"
     tslib "2.5.3"
 
-"@nestjs/testing@^9":
-  version "9.4.2"
-  resolved "https://registry.npmjs.org/@nestjs/testing/-/testing-9.4.2.tgz#d6533195f5a50c84cf7e1df5a241585d1f360e44"
-  integrity sha512-4WZPJz85zLVZkhmWYq+Unr43MixISelg/TyuX1YFZYOeukIN+O6fRtAAPIKLqRQsiY0rE/h8FAEbYGWhNrRfSA==
+"@nestjs/testing@^9.3.9":
+  version "9.4.3"
+  resolved "https://registry.npmjs.org/@nestjs/testing/-/testing-9.4.3.tgz#53ffbabdd38f500b145c30f2fbb76dedad393d79"
+  integrity sha512-LDT8Ai2eKnTzvnPaJwWOK03qTaFap5uHHsJCv6dL0uKWk6hyF9jms8DjyVaGsaujCaXDG8izl1mDEER0OmxaZA==
   dependencies:
-    tslib "2.5.2"
+    tslib "2.5.3"
 
 "@nestjs/typeorm@^10.0.0":
   version "10.0.0"
@@ -2979,11 +2979,6 @@ ts-jest@^28.0.8:
     make-error "1.x"
     semver "7.x"
     yargs-parser "^21.0.1"
-
-tslib@2.5.2:
-  version "2.5.2"
-  resolved "https://registry.npmjs.org/tslib/-/tslib-2.5.2.tgz#1b6f07185c881557b0ffa84b111a0106989e8338"
-  integrity sha512-5svOrSA2w3iGFDs1HibEVBGbDrAY82bFQ3HZ3ixB+88nsbsWQoKqDRb5UBYAUPEzbBn6dAp5gRNXglySbx1MlA==
 
 tslib@2.5.3, tslib@^2.1.0, tslib@^2.5.0:
   version "2.5.3"
