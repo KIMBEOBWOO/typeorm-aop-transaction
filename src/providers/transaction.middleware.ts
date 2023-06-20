@@ -10,7 +10,8 @@ export class TransactionMiddleware implements NestMiddleware {
     private readonly alsService: AsyncLocalStorage<AlsStore>,
   ) {}
 
-  async use(_req: unknown, _res: unknown, next: typeof Function) {
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  use(_req: unknown, _res: unknown, next: Function) {
     const store: AlsStore = {
       _id: Date.now().toString(),
       parentPropagtionContext: {},

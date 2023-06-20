@@ -1,6 +1,5 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { DiscoveryService } from '@nestjs/core';
-import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { DataSource } from 'typeorm';
 import { TransactionModuleOption } from '../interfaces/transaction-module-option.interface';
 import { TRANSACTION_MODULE_OPTION } from '../symbols/transaciton-module-option.symbol';
