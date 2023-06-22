@@ -2,9 +2,14 @@ import { QueryRunner } from 'typeorm';
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
 import { DataSourceMapService } from './data-source-map.service';
 import { NotRollbackError } from '../exceptions/not-rollback.error';
+import { Inject } from '@nestjs/common';
+import { DATA_SOURCE_MAP_SERVICE } from '../symbols/data-source-map.service.symbol';
 
 export class TypeORMTransactionService {
-  constructor(private readonly dataSourceMapService: DataSourceMapService) {}
+  constructor(
+    @Inject(DATA_SOURCE_MAP_SERVICE)
+    private readonly dataSourceMapService: DataSourceMapService,
+  ) {}
 
   /**
    * 데이터베이스 연결풀에서 연결 획득/생성
@@ -26,9 +31,7 @@ export class TypeORMTransactionService {
    * @description 해당 메서드는 호출시 별도의 트랜잭션 경계 설정 없이 모든 작업을 타깃 메서드에게 위임한다.
    */
   async runInTransaction(method: (...param: any[]) => any, args: any[]) {
-    const result = await method(...args);
-
-    return result;
+    return await method(...args);
   }
 
   /**
