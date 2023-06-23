@@ -20,16 +20,16 @@ describe('DataSourceMapService', () => {
   beforeEach(async () => {
     const providerList: InstanceWrapper<any>[] = [
       {
-        name: 'TEST_DATA_SOURCE_1',
-        instance: new DataSource({ type: 'postgres' }),
+        instance: new DataSource({
+          type: 'postgres',
+          name: 'TEST_DATA_SOURCE_1',
+        }),
       } as any,
       {
-        name: 'NOT_DATA_SOURCE_1',
         instance: { a: 1, b: 2 },
       } as any,
       {
-        name: 'TEST_DATA_SOURCE_2',
-        instance: new DataSource({ type: 'mysql' }),
+        instance: new DataSource({ type: 'mysql', name: 'TEST_DATA_SOURCE_2' }),
       } as any,
     ];
 

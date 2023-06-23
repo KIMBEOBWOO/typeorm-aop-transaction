@@ -27,7 +27,7 @@ export class DataSourceMapService implements OnModuleInit {
 
     // init dataSourceMap
     this.dataSourceMap = dataSourceProviders.reduce((prev, curr) => {
-      prev[curr.name] = curr.instance;
+      prev[curr.instance.name] = curr.instance;
 
       return prev;
     }, {} as Record<string, DataSource | undefined>);
@@ -39,6 +39,9 @@ export class DataSourceMapService implements OnModuleInit {
    * @returns DataSource
    */
   public getDataSource(connectionName?: string): DataSource {
+    /**
+     * @NOTE instance name 규칙 확인 필요
+     */
     const dataSource: DataSource | undefined =
       this.dataSourceMap[connectionName || this.option.defaultConnectionName];
 
