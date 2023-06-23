@@ -15,6 +15,7 @@ import { BaseRepositoryConstructor } from '../interfaces/base-repository-constru
 import { isBaseRepositoryPrototype } from '../utils/is-base-repository-prototype';
 import { EntityTarget } from 'typeorm';
 import { isTypeORMEntity } from '../utils/is-typeorm-entity';
+import { DATA_SOURCE_MAP_SERVICE } from '../symbols/data-source-map.service.symbol';
 
 @Module({
   imports: [DiscoveryModule],
@@ -35,12 +36,9 @@ export class TransactionModule {
           useValue: options,
         },
         {
-          provide: DataSourceMapService,
+          provide: DATA_SOURCE_MAP_SERVICE,
           useFactory: (discoveryService: DiscoveryService) => {
-            return new DataSourceMapService(
-              discoveryService,
-              options.defaultConnectionName,
-            );
+            return new DataSourceMapService(discoveryService, options);
           },
           inject: [DiscoveryService],
         },
@@ -49,7 +47,7 @@ export class TransactionModule {
           useFactory: (service: DataSourceMapService) => {
             return new TypeORMTransactionService(service);
           },
-          inject: [DataSourceMapService],
+          inject: [DATA_SOURCE_MAP_SERVICE],
         },
         TransactionLogger,
         AlsTransactionDecorator,
