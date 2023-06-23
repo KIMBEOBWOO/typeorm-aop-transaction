@@ -103,7 +103,7 @@ describe('AlsTransactionDecorator', () => {
       };
       const args = [1, 2, 3, 4];
 
-      it(`  If the contact has a running parent transaction and the propagation property 
+      it(`  If the context has a running parent transaction and the propagation property 
             of that transaction is not REQUIRES_NEW, you must participate in the parent transaction`, async () => {
         jest.spyOn(alsService, 'getStore').mockReturnValue({
           _id: '1997-06-07',
@@ -135,7 +135,7 @@ describe('AlsTransactionDecorator', () => {
         expect(targetMethod).toBeCalledWith(1, 2, 3, 4);
       });
 
-      it(`  If the contact does not have a query runner, a new transaction must be created`, async () => {
+      it(`  If the context does not have a query runner, a new transaction must be created`, async () => {
         jest.spyOn(alsService, 'getStore').mockReturnValue({
           _id: '1997-06-07',
           parentPropagtionContext: {},
@@ -177,6 +177,30 @@ describe('AlsTransactionDecorator', () => {
            */
           expect.any(Function),
         );
+      });
+
+      it(`  If the parent transaction is REQUIRES_NEW, 
+            throw a NotRollbackError if an error occurs`, async () => {
+        jest.spyOn(alsService, 'getStore').mockReturnValue({
+          _id: '1997-06-07',
+          parentPropagtionContext: {
+            [PROPAGATION.REQUIRES_NEW]: true,
+          },
+          queryRunner: {
+            ...queryRunner,
+            isTransactionActive: true,
+            connection: {
+              name: 'STORE_CONNECTION_NAME',
+            } as any,
+          },
+        });
+        jest.spyOn(logger, 'debug').mockImplementation(() => {
+          throw new Error('TARGET METHOD ERROR');
+        });
+
+        await expect(
+          async () => await service.wrap(wrapParam)(...args),
+        ).rejects.toBeInstanceOf(NotRollbackError);
       });
     });
 
@@ -248,7 +272,7 @@ describe('AlsTransactionDecorator', () => {
       };
       const args = [1, 2, 3, 4];
 
-      it(`  If the contact has a running parent transaction and the propagation 
+      it(`  If the context has a running parent transaction and the propagation 
             property of that transaction is not REQUIRES_NEW, create nested transaction`, async () => {
         const storeQueryRunner = {
           ...queryRunner,
@@ -294,7 +318,7 @@ describe('AlsTransactionDecorator', () => {
         );
       });
 
-      it(`  If the contact does not have a query runner, a new transaction must be created`, async () => {
+      it(`  If the context does not have a query runner, a new transaction must be created`, async () => {
         jest.spyOn(alsService, 'getStore').mockReturnValue({
           _id: '1997-06-07',
           parentPropagtionContext: {},
