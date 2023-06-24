@@ -2,11 +2,11 @@ import { DiscoveryService } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
-import { TransactionModuleOption } from '../interfaces/transaction-module-option.interface';
-import { DataSourceMapService } from '../providers/data-source-map.service';
-import { TRANSACTION_MODULE_OPTION } from '../symbols/transaciton-module-option.symbol';
-import { getMockDiscoveryService } from './mocks/discovery.service.mock';
-import { getMockTransactionModuleOption } from './mocks/transaction-module-option.mock';
+import { TransactionModuleOption } from '../../interfaces/transaction-module-option.interface';
+import { DataSourceMapService } from '../../providers/data-source-map.service';
+import { TRANSACTION_MODULE_OPTION } from '../../symbols/transaciton-module-option.symbol';
+import { getMockDiscoveryService } from '../mocks/discovery.service.mock';
+import { getMockTransactionModuleOption } from '../mocks/transaction-module-option.mock';
 
 class TestDataSourceMapService extends DataSourceMapService {
   public override dataSourceMap!: Record<string, DataSource | undefined>;

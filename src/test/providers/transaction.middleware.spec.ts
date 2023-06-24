@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'async_hooks';
-import { AlsStore } from '../interfaces/als-store.interface';
-import { TransactionMiddleware } from '../providers/transaction.middleware';
+import { AlsStore } from '../../interfaces/als-store.interface';
+import { TransactionMiddleware } from '../../providers/transaction.middleware';
 
 describe('TransactionMiddleware', () => {
   let middleware: TransactionMiddleware;

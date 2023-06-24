@@ -2,15 +2,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { LazyDecorator, WrapParams } from '@toss/nestjs-aop';
 import { AsyncLocalStorage } from 'async_hooks';
 import { QueryRunner } from 'typeorm';
-import { PROPAGATION } from '../const/propagation';
-import { NotRollbackError } from '../exceptions/not-rollback.error';
-import { AlsStore } from '../interfaces/als-store.interface';
-import { TransactionOptions } from '../interfaces/transaction-option.interface';
-import { AlsTransactionDecorator } from '../providers/als-transaction.decorator';
-import { TransactionLogger } from '../providers/transaction.logger';
-import { TypeORMTransactionService } from '../providers/transaction.service';
-import { ALS_SERVICE } from '../symbols/als-service.symbol';
-import { getMockAlsService } from './mocks/als.service.mock';
+import { PROPAGATION } from '../../const/propagation';
+import { NotRollbackError } from '../../exceptions/not-rollback.error';
+import { AlsStore } from '../../interfaces/als-store.interface';
+import { TransactionOptions } from '../../interfaces/transaction-option.interface';
+import { AlsTransactionDecorator } from '../../providers/als-transaction.decorator';
+import { TransactionLogger } from '../../providers/transaction.logger';
+import { TypeORMTransactionService } from '../../providers/transaction.service';
+import { ALS_SERVICE } from '../../symbols/als-service.symbol';
+import { getMockAlsService } from '../mocks/als.service.mock';
 
 describe('AlsTransactionDecorator', () => {
   let service: LazyDecorator<any, TransactionOptions>;
