@@ -1,7 +1,7 @@
 module.exports = {
   roots: ['src'],
   transform: { '^.+\\.ts$': 'ts-jest' },
-  testMatch: ['**/*.spec.ts'],
+  testMatch: ['**/*.spec.ts', '**/*.e2e-spec.ts'],
   globals: {
     'ts-jest': {
       diagnostics: false,
