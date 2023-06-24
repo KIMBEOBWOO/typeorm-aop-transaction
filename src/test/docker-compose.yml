@@ -1,0 +1,23 @@
+version: '3.7'
+
+services:
+  db-postgres:
+    container_name: db-postgres
+    image: postgres:12
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=testtest
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+      - ./sql/postgres:/docker-entrypoint-initdb.d
+  # # Local MySQL database container
+  # db-mysql:
+  #   container_name: db-mysql
+  #   image: mysql:8.0
+  #   ports:
+  #     - 3306:3306
+  #   environment:
+  #     - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+  #   volumes:
+  #     - ./mysql:/var/lib/mysql
