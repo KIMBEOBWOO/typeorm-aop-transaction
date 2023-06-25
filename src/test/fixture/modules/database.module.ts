@@ -19,7 +19,8 @@ export const POSTGRES_CONNECTION = 'POSTGRES_CONNECTION';
       synchronize: false,
       // Entity file path (always consider dockerfile)
       entities: [User, Workspace],
-      logging: 'all',
+      logging: ['query'],
+      logger: 'simple-console',
     }),
   ],
   providers: [],

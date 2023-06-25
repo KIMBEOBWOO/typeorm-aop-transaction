@@ -14,10 +14,25 @@ export class UserService {
   ) {}
 
   @Transactional({
-    propagation: PROPAGATION.NESTED,
+    propagation: PROPAGATION.REQUIRED,
   })
   async create(dto: CreateUserDto) {
     const user = new User();
+    user.user_id = dto.user_id;
+    user.email = dto.email;
+    user.password = dto.password;
+    user.phone_number = dto.phone_number;
+
+    await this.create2({ ...dto, user_id: dto.user_id + '2' });
+    await this.userRepository.insert(user);
+  }
+
+  @Transactional({
+    propagation: PROPAGATION.REQUIRED,
+  })
+  async create2(dto: CreateUserDto) {
+    const user = new User();
+    user.user_id = dto.user_id;
     user.email = dto.email;
     user.password = dto.password;
     user.phone_number = dto.phone_number;

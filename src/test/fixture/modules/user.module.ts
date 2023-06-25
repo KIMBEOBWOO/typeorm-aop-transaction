@@ -8,5 +8,6 @@ import { UserService } from '../services/user.service';
   imports: [TransactionModule.setRepository([User])],
   controllers: [UserController],
   providers: [UserService],
+  exports: [UserService],
 })
 export class UserModule {}

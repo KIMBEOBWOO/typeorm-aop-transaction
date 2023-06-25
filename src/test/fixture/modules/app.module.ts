@@ -3,6 +3,7 @@ import { AopModule } from '@toss/nestjs-aop';
 import { TransactionModule } from '../../../modules/transaciton.module';
 import { TransactionMiddleware } from '../../../providers/transaction.middleware';
 import { DatabaseModule, POSTGRES_CONNECTION } from './database.module';
+import { UserModule } from './user.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { DatabaseModule, POSTGRES_CONNECTION } from './database.module';
     TransactionModule.regist({
       defaultConnectionName: POSTGRES_CONNECTION,
     }),
+    UserModule,
   ],
   controllers: [],
   providers: [],

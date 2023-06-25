@@ -10,4 +10,9 @@ export class CreateUserDto extends PickType(User, [
   @IsString()
   @Length(3, 255)
   readonly password!: string;
+
+  constructor(data: CreateUserDto) {
+    super();
+    Object.assign(this, data);
+  }
 }
