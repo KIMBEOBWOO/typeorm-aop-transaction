@@ -1,13 +1,9 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { getDataSourceToken, TypeOrmModule } from '@nestjs/typeorm';
-import { AopModule } from '@toss/nestjs-aop';
+import { getDataSourceToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { TransactionModule } from '../modules/transaciton.module';
-import { User } from './fixture/entities/user.entity';
-import { Workspace } from './fixture/entities/workspace.entity';
-
-const POSTGRES_CONNECTION = 'POSTGRES_CONNECTION';
+import { AppModule } from './fixture/modules/app.module';
+import { POSTGRES_CONNECTION } from './fixture/modules/database.module';
 
 describe('Tranaction Module', () => {
   let app: INestApplication;
@@ -15,26 +11,7 @@ describe('Tranaction Module', () => {
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
-      imports: [
-        AopModule,
-        // Postgres Database
-        TypeOrmModule.forRoot({
-          name: POSTGRES_CONNECTION,
-          type: 'postgres',
-          host: '127.0.0.1',
-          port: 5432,
-          username: 'beobwoo',
-          password: 'testtest',
-          database: 'test_db',
-          synchronize: false,
-          // Entity file path (always consider dockerfile)
-          entities: [User, Workspace],
-          logging: 'all',
-        }),
-        TransactionModule.regist({
-          defaultConnectionName: POSTGRES_CONNECTION,
-        }),
-      ],
+      imports: [AppModule],
       providers: [],
     }).compile();
 
