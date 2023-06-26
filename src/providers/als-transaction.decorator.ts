@@ -264,7 +264,7 @@ export class AlsTransactionDecorator
           // 상위 진행되고 있는 트랜잭션이 REQUIRES_NEW 인 경우 내가 던진 에러는 롤백하면 안됨
           parentPropagtionContext[PROPAGATION.REQUIRES_NEW] ||
           // 현재 진행 중인 트랜잭션이 REQUIRES_NEW 인 경우
-          metadata?.propagation === PROPAGATION.REQUIRES_NEW || 
+          metadata?.propagation === PROPAGATION.REQUIRES_NEW ||
           // 현재 진행 중인 트랜잭션이 NESTED 이고 부모 트랜잭션이 있는 경우(중첩) 내가 던진 에러는 롤백하면 안됨
           (metadata?.propagation === PROPAGATION.NESTED &&
             store.queryRunner !== undefined)
@@ -273,6 +273,7 @@ export class AlsTransactionDecorator
         }
 
         throw e;
+      }
     };
   }
 
