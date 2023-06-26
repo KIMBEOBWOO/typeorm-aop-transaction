@@ -51,4 +51,33 @@ export class UserV1Service {
 
     fixtureOption?.afterCallback && (await fixtureOption.afterCallback());
   }
+
+  @Transactional({
+    propagation: PROPAGATION.NESTED,
+  })
+  async createNested(dto: CreateUserDto, fixtureOption?: ServiceFixtureOption) {
+    const user = new User();
+    user.user_id = dto.user_id;
+    user.email = dto.email;
+    user.password = dto.password;
+    user.phone_number = dto.phone_number;
+
+    // 2
+    await this.userRepository.insert(user);
+
+    fixtureOption?.afterCallback && (await fixtureOption.afterCallback());
+  }
+
+  @Transactional({
+    propagation: 'REQUIRED',
+  })
+  async findAll(): Promise<User[]> {
+    const result = await this.userRepository.find({
+      order: {
+        created_at: 'ASC',
+      },
+    });
+
+    return result;
+  }
 }

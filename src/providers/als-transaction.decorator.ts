@@ -258,8 +258,6 @@ export class AlsTransactionDecorator
           );
         }
       } catch (e) {
-        console.log(e);
-
         if (
           // 상위 진행되고 있는 트랜잭션이 REQUIRES_NEW 인 경우 내가 던진 에러는 롤백하면 안됨
           parentPropagtionContext[PROPAGATION.REQUIRES_NEW] ||

@@ -9,12 +9,12 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { User } from '../entities/user.entity';
-import { UserService } from '../services/user.service';
+import { UserV1Service } from '../services/user.v1.service';
 
 @Controller('user')
 export class UserController {
   constructor(
-    private readonly userService: UserService, // private readonly alsService: AsyncLocalStorage<any>,
+    private readonly userService: UserV1Service, // private readonly alsService: AsyncLocalStorage<any>,
   ) {}
 
   @Post()
@@ -22,7 +22,7 @@ export class UserController {
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     dto: CreateUserDto,
   ) {
-    return await this.userService.create(dto);
+    return await this.userService.createNested(dto);
   }
 
   @Get('list')
