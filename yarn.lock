@@ -689,9 +689,9 @@
   resolved "https://registry.npmjs.org/@sqltools/formatter/-/formatter-1.2.5.tgz"
   integrity sha512-Uy0+khmZqUrUGm5dmMqVlnvufZRSK0FbYzVgp0UMstm+F5+W2/jnEEQyc9vo1ZR/E5ZI/B1WjjoTqBqwJL6Krw==
 
-"@toss/nestjs-aop@^2.0.3":
+"@toss/nestjs-aop@^2.0.2":
   version "2.0.3"
-  resolved "https://registry.npmjs.org/@toss/nestjs-aop/-/nestjs-aop-2.0.3.tgz"
+  resolved "https://registry.npmjs.org/@toss/nestjs-aop/-/nestjs-aop-2.0.3.tgz#31b07d782029e0022192094eec3dfdc9318352b6"
   integrity sha512-rWr5uPqY76l3VyRgMstWK26c50fu4FH3UY74jNmrvdtETRjUhKyBz3DtDMfRYMjzSY6/gVA/DIGit1Q7i2pRPA==
   dependencies:
     ramda "^0.28.0"
@@ -3197,7 +3197,7 @@ queue-microtask@^1.2.2:
 
 ramda@^0.28.0:
   version "0.28.0"
-  resolved "https://registry.npmjs.org/ramda/-/ramda-0.28.0.tgz"
+  resolved "https://registry.npmjs.org/ramda/-/ramda-0.28.0.tgz#acd785690100337e8b063cab3470019be427cc97"
   integrity sha512-9QnLuG/kPVgWvMQ4aODhsBUFKOUmnbUnsSXACv+NCQZcHbeb+v8Lodp8OVxtRULN1/xOyYLLaL6npE6dMq5QTA==
 
 range-parser@~1.2.1:
