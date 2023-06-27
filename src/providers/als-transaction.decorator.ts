@@ -26,6 +26,7 @@ export class AlsTransactionDecorator
   wrap({ metadata, method, methodName }: WrapParams<any, TransactionOptions>) {
     return async (...args: any) => {
       const store = this.alsService.getStore();
+
       if (!store) {
         throw new Error(
           'AlsTransactionDecorator requires async storage to be initialized. Please check if TransactionMiddleware is registered as a consumer in the root module',
@@ -202,55 +203,41 @@ export class AlsTransactionDecorator
             );
           }
         } else if (propagation === PROPAGATION.NEVER) {
-          if (storeQueryRunner && storeQueryRunner.isTransactionActive) {
+          if (storeQueryRunner) {
             throw new Error(
               'Attempting to join a transaction in progress. Methods with NEVER properties cannot run within a transaction boundary',
             );
-          } else if (
-            storeQueryRunner &&
-            !storeQueryRunner.isTransactionActive
-          ) {
+          } else {
+            // 빈 쿼리러너이므로 새로 세팅
+            const notTransactionalQueryRunner =
+              this.transactionService.createConnection(connectionName);
+
             this.logger.debug(
-              'Join Transaction',
+              'No Transaction',
               store._id,
-              storeQueryRunner.connection.name,
+              notTransactionalQueryRunner.connection.name,
               methodName,
               isolationLevel,
               propagation,
             );
 
-            return await this.transactionService.runInTransaction(method, args);
-          }
-
-          // 빈 쿼리러너이므로 새로 세팅
-          const notTransactionalQueryRunner =
-            this.transactionService.createConnection(connectionName);
-
-          this.logger.debug(
-            'No Transaction',
-            store._id,
-            notTransactionalQueryRunner.connection.name,
-            methodName,
-            isolationLevel,
-            propagation,
-          );
-
-          return await this.alsService.run(
-            {
-              // 스토어 쿼리러너 세팅
-              _id: store._id,
-              queryRunner: notTransactionalQueryRunner,
-              parentPropagtionContext: {
-                [propagation]: true, // REQUIRES_NEW 가 부모에 진행중임을 설정
+            return await this.alsService.run(
+              {
+                // 스토어 쿼리러너 세팅
+                _id: store._id,
+                queryRunner: notTransactionalQueryRunner,
+                parentPropagtionContext: {
+                  [propagation]: true, // REQUIRES_NEW 가 부모에 진행중임을 설정
+                },
               },
-            },
-            async () => {
-              return await this.transactionService.runInTransaction(
-                method,
-                args,
-              );
-            },
-          );
+              async () => {
+                return await this.transactionService.runInTransaction(
+                  method,
+                  args,
+                );
+              },
+            );
+          }
         } else {
           throw new Error(
             `Propagation(${metadata.propagation}) option not supported yet.`,
@@ -260,6 +247,8 @@ export class AlsTransactionDecorator
         if (
           // 상위 진행되고 있는 트랜잭션이 REQUIRES_NEW 인 경우 내가 던진 에러는 롤백하면 안됨
           parentPropagtionContext[PROPAGATION.REQUIRES_NEW] ||
+          // 현재 진행 중인 트랜잭션이 REQUIRES_NEW 인 경우
+          metadata?.propagation === PROPAGATION.REQUIRES_NEW ||
           // 현재 진행 중인 트랜잭션이 NESTED 이고 부모 트랜잭션이 있는 경우(중첩) 내가 던진 에러는 롤백하면 안됨
           (metadata?.propagation === PROPAGATION.NESTED &&
             store.queryRunner !== undefined)

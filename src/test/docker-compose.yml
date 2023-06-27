@@ -1,0 +1,13 @@
+version: '3.7'
+
+services:
+  db-postgres:
+    container_name: db-postgres
+    image: postgres:12
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=testtest
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+      - ./sql/postgres:/docker-entrypoint-initdb.d

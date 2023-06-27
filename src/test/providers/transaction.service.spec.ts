@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource, QueryRunner } from 'typeorm';
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
-import { NotRollbackError } from '../exceptions/not-rollback.error';
-import { DataSourceMapService } from '../providers/data-source-map.service';
-import { TypeORMTransactionService } from '../providers/transaction.service';
-import { DATA_SOURCE_MAP_SERVICE } from '../symbols/data-source-map.service.symbol';
+import { NotRollbackError } from '../../exceptions/not-rollback.error';
+import { DataSourceMapService } from '../../providers/data-source-map.service';
+import { TypeORMTransactionService } from '../../providers/transaction.service';
+import { DATA_SOURCE_MAP_SERVICE } from '../../symbols/data-source-map.service.symbol';
 
 describe('TypeORMTransactionService', () => {
   let service: TypeORMTransactionService;
