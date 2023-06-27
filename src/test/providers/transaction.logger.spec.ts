@@ -1,4 +1,4 @@
-import { TransactionLogger } from '../providers/transaction.logger';
+import { TransactionLogger } from '../../providers/transaction.logger';
 
 describe('TransactionLogger', () => {
   describe('constructor', () => {

@@ -1,4 +1,4 @@
-import { NotRollbackError } from '../exceptions/not-rollback.error';
+import { NotRollbackError } from '../../exceptions/not-rollback.error';
 
 describe('Exceptions Unit Test', () => {
   describe('NotRollbackError', () => {

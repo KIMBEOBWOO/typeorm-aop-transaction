@@ -15,6 +15,6 @@
     "sourceMap": true,
     "outDir": "dist",
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "src/test/**/*.ts", "dist", "temp"]
+  "include": ["src/**/*", ".eslintrc.js"],
+  "exclude": ["node_modules", "dist", "temp"]
 }

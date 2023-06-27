@@ -1,7 +1,7 @@
 import { Entity } from 'typeorm';
-import { BaseRepository } from '../base.repository';
-import { isBaseRepositoryPrototype } from '../utils/is-base-repository-prototype';
-import { isTypeORMEntity } from '../utils/is-typeorm-entity';
+import { BaseRepository } from '../../base.repository';
+import { isBaseRepositoryPrototype } from '../../utils/is-base-repository-prototype';
+import { isTypeORMEntity } from '../../utils/is-typeorm-entity';
 
 describe('Utility Unit Test', () => {
   describe('isBaseRepositoryPrototype', () => {
