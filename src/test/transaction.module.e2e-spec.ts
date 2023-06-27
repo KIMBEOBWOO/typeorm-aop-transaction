@@ -9,6 +9,7 @@ import { getCreateUserDto } from './fixture/data/test-data';
 import { CreateUserDto } from './fixture/dtos/create-user.dto';
 import { AppModule } from './fixture/modules/app.module';
 import { POSTGRES_CONNECTION } from './fixture/modules/database.module';
+import { mockQueryLogger } from './fixture/services/typeorm-logger';
 import { UserV1Service } from './fixture/services/user.v1.service';
 
 describe('Tranaction Module', () => {
@@ -46,6 +47,10 @@ describe('Tranaction Module', () => {
 
     dto1 = getCreateUserDto(1);
     dto2 = getCreateUserDto(2);
+
+    Object.assign(mockQueryLogger, {
+      info: jest.fn(),
+    });
   });
 
   afterAll(async () => {
@@ -63,12 +68,12 @@ describe('Tranaction Module', () => {
   });
 
   describe('REQUIRED', () => {
-    it(`부모 트랜잭션이 없거나 참여 불가능한 트랜잭션인 경우 새로운 트랜잭션을 만들어야한다.`, async () => {
+    it('부모 트랜잭션이 없거나 참여 불가능한 트랜잭션인 경우 새로운 트랜잭션을 만들어야한다.', async () => {
       const store: AlsStore = {
         _id: Date.now().toString(),
         parentPropagtionContext: {},
       };
-      const log = jest.spyOn(console, 'info');
+      const log = jest.spyOn(mockQueryLogger, 'info');
       const expectedTransactionLogs = [
         'START TRANSACTION',
         'SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
@@ -80,11 +85,7 @@ describe('Tranaction Module', () => {
         await userV1Service.createRequried(dto1);
 
         expectedTransactionLogs.forEach((expectedLog, idx) => {
-          expect(log).toHaveBeenNthCalledWith(
-            idx + 1,
-            expect.stringContaining('query'),
-            expectedLog,
-          );
+          expect(log).toHaveBeenNthCalledWith(idx + 1, expectedLog);
         });
 
         const userList = await userV1Service.findAll();
@@ -105,7 +106,7 @@ describe('Tranaction Module', () => {
         _id: Date.now().toString(),
         parentPropagtionContext: {},
       };
-      const log = jest.spyOn(console, 'info');
+      const log = jest.spyOn(mockQueryLogger, 'info');
       const expectedTransactionLogs = [
         'START TRANSACTION',
         'SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
@@ -122,11 +123,7 @@ describe('Tranaction Module', () => {
         });
 
         expectedTransactionLogs.forEach((expectedLog, idx) => {
-          expect(log).toHaveBeenNthCalledWith(
-            idx + 1,
-            expect.stringContaining('query'),
-            expectedLog,
-          );
+          expect(log).toHaveBeenNthCalledWith(idx + 1, expectedLog);
         });
 
         const userList = await userV1Service.findAll();
@@ -142,12 +139,12 @@ describe('Tranaction Module', () => {
       });
     });
 
-    it(`부모 트랜잭션내에서 오류가 발생할 경우 모두 롤백되어야한다.`, async () => {
+    it('부모 트랜잭션내에서 오류가 발생할 경우 모두 롤백되어야한다.', async () => {
       const store: AlsStore = {
         _id: Date.now().toString(),
         parentPropagtionContext: {},
       };
-      const log = jest.spyOn(console, 'info');
+      const log = jest.spyOn(mockQueryLogger, 'info');
       const expectedTransactionLogs = [
         'START TRANSACTION',
         'SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
@@ -176,11 +173,7 @@ describe('Tranaction Module', () => {
         );
 
         expectedTransactionLogs.forEach((expectedLog, idx) => {
-          expect(log).toHaveBeenNthCalledWith(
-            idx + 1,
-            expect.stringContaining('query'),
-            expectedLog,
-          );
+          expect(log).toHaveBeenNthCalledWith(idx + 1, expectedLog);
         });
 
         const userList = await userV1Service.findAll();
@@ -188,12 +181,12 @@ describe('Tranaction Module', () => {
       });
     });
 
-    it(`자식 트랜잭션내에서 오류가 발생할 경우 모두 롤백되어야한다.`, async () => {
+    it('자식 트랜잭션내에서 오류가 발생할 경우 모두 롤백되어야한다.', async () => {
       const store: AlsStore = {
         _id: Date.now().toString(),
         parentPropagtionContext: {},
       };
-      const log = jest.spyOn(console, 'info');
+      const log = jest.spyOn(mockQueryLogger, 'info');
       const expectedTransactionLogs = [
         'START TRANSACTION',
         'SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
@@ -224,11 +217,7 @@ describe('Tranaction Module', () => {
         );
 
         expectedTransactionLogs.forEach((expectedLog, idx) => {
-          expect(log).toHaveBeenNthCalledWith(
-            idx + 1,
-            expect.stringContaining('query'),
-            expectedLog,
-          );
+          expect(log).toHaveBeenNthCalledWith(idx + 1, expectedLog);
         });
 
         const userList = await userV1Service.findAll();
@@ -243,7 +232,7 @@ describe('Tranaction Module', () => {
         _id: Date.now().toString(),
         parentPropagtionContext: {},
       };
-      const log = jest.spyOn(console, 'info');
+      const log = jest.spyOn(mockQueryLogger, 'info');
       const expectedTransactionLogs = [
         'START TRANSACTION',
         'SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
@@ -262,11 +251,7 @@ describe('Tranaction Module', () => {
         });
 
         expectedTransactionLogs.forEach((expectedLog, idx) => {
-          expect(log).toHaveBeenNthCalledWith(
-            idx + 1,
-            expect.stringContaining('query'),
-            expectedLog,
-          );
+          expect(log).toHaveBeenNthCalledWith(idx + 1, expectedLog);
         });
 
         const userList = await userV1Service.findAll();
@@ -282,12 +267,12 @@ describe('Tranaction Module', () => {
       });
     });
 
-    it('부모 트랜잭션에서 오류가 발생한 경우 REQURIES_NEW 트랜잭션은 정상적으로 커밋되어야한다.', async () => {
+    it('부모 트랜잭션에서 오류가 발생한 경우 자신은 정상적으로 커밋되어야한다.', async () => {
       const store: AlsStore = {
         _id: Date.now().toString(),
         parentPropagtionContext: {},
       };
-      const log = jest.spyOn(console, 'info');
+      const log = jest.spyOn(mockQueryLogger, 'info');
       const expectedTransactionLogs = [
         'START TRANSACTION',
         'SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
@@ -312,11 +297,7 @@ describe('Tranaction Module', () => {
         ).rejects.toThrow(new Error('Parent Error!'));
 
         expectedTransactionLogs.forEach((expectedLog, idx) => {
-          expect(log).toHaveBeenNthCalledWith(
-            idx + 1,
-            expect.stringContaining('query'),
-            expectedLog,
-          );
+          expect(log).toHaveBeenNthCalledWith(idx + 1, expectedLog);
         });
 
         const [user] = await userV1Service.findAll();
@@ -330,12 +311,12 @@ describe('Tranaction Module', () => {
       });
     });
 
-    it('자신의 트랜잭션에서 오류가 발생한 경우 스스로만 롤백되어야한다.', async () => {
+    it('스스로의 트랜잭션내에서 오류가 발생한 경우 스스로만 롤백되어야한다.', async () => {
       const store: AlsStore = {
         _id: Date.now().toString(),
         parentPropagtionContext: {},
       };
-      const log = jest.spyOn(console, 'info');
+      const log = jest.spyOn(mockQueryLogger, 'info');
       const expectedTransactionLogs = [
         'START TRANSACTION',
         'SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
@@ -364,11 +345,7 @@ describe('Tranaction Module', () => {
         ).rejects.toThrow(new Error('Children Error!'));
 
         expectedTransactionLogs.forEach((expectedLog, idx) => {
-          expect(log).toHaveBeenNthCalledWith(
-            idx + 1,
-            expect.stringContaining('query'),
-            expectedLog,
-          );
+          expect(log).toHaveBeenNthCalledWith(idx + 1, expectedLog);
         });
 
         const [user] = await userV1Service.findAll();
@@ -389,7 +366,7 @@ describe('Tranaction Module', () => {
         _id: Date.now().toString(),
         parentPropagtionContext: {},
       };
-      const log = jest.spyOn(console, 'info');
+      const log = jest.spyOn(mockQueryLogger, 'info');
       const expectedTransactionLogs = [
         'START TRANSACTION',
         'SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
@@ -401,11 +378,7 @@ describe('Tranaction Module', () => {
         await userV1Service.createNested(dto1);
 
         expectedTransactionLogs.forEach((expectedLog, idx) => {
-          expect(log).toHaveBeenNthCalledWith(
-            idx + 1,
-            expect.stringContaining('query'),
-            expectedLog,
-          );
+          expect(log).toHaveBeenNthCalledWith(idx + 1, expectedLog);
         });
 
         const userList = await userV1Service.findAll();
@@ -427,7 +400,7 @@ describe('Tranaction Module', () => {
         _id: Date.now().toString(),
         parentPropagtionContext: {},
       };
-      const log = jest.spyOn(console, 'info');
+      const log = jest.spyOn(mockQueryLogger, 'info');
       const expectedTransactionLogs = [
         'START TRANSACTION',
         'SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
@@ -446,11 +419,7 @@ describe('Tranaction Module', () => {
         });
 
         expectedTransactionLogs.forEach((expectedLog, idx) => {
-          expect(log).toHaveBeenNthCalledWith(
-            idx + 1,
-            expect.stringContaining('query'),
-            expectedLog,
-          );
+          expect(log).toHaveBeenNthCalledWith(idx + 1, expectedLog);
         });
 
         const userList = await userV1Service.findAll();
@@ -473,7 +442,7 @@ describe('Tranaction Module', () => {
         _id: Date.now().toString(),
         parentPropagtionContext: {},
       };
-      const log = jest.spyOn(console, 'info');
+      const log = jest.spyOn(mockQueryLogger, 'info');
       const expectedTransactionLogs = [
         'START TRANSACTION',
         'SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
@@ -499,11 +468,7 @@ describe('Tranaction Module', () => {
         ).rejects.toThrow(new Error('NESTED ERROR'));
 
         expectedTransactionLogs.forEach((expectedLog, idx) => {
-          expect(log).toHaveBeenNthCalledWith(
-            idx + 1,
-            expect.stringContaining('query'),
-            expectedLog,
-          );
+          expect(log).toHaveBeenNthCalledWith(idx + 1, expectedLog);
         });
 
         const userList = await userV1Service.findAll();
@@ -516,6 +481,74 @@ describe('Tranaction Module', () => {
             updated_at: expect.any(Date),
             deleted_at: null,
             ...getCreateUserDto(1),
+          });
+        });
+      });
+    });
+  });
+
+  describe('NEVER', () => {
+    it('부모 트랜잭션이 진행 중인 경우 오류를 반환해야한다.', async () => {
+      const store: AlsStore = {
+        _id: Date.now().toString(),
+        parentPropagtionContext: {},
+      };
+      const log = jest.spyOn(mockQueryLogger, 'info');
+      const expectedTransactionLogs = [
+        'START TRANSACTION',
+        'SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
+        'INSERT INTO "user"("created_at", "updated_at", "deleted_at", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["test user id1","test user password1","test email1","test phone number1"]',
+        'ROLLBACK',
+      ];
+
+      await alsService.run(store, async () => {
+        await expect(
+          async () =>
+            await userV1Service.createRequried(dto1, {
+              afterCallback: async () => {
+                await userV1Service.createNever(dto2);
+              },
+            }),
+        ).rejects.toThrow(
+          new Error(
+            'Attempting to join a transaction in progress. Methods with NEVER properties cannot run within a transaction boundary',
+          ),
+        );
+
+        expectedTransactionLogs.forEach((expectedLog, idx) => {
+          expect(log).toHaveBeenNthCalledWith(idx + 1, expectedLog);
+        });
+
+        const userList = await userV1Service.findAll();
+        expect(userList.length).toBe(0);
+      });
+    });
+
+    it('부모 트랜잭션이 진행 중이 아닌 경우 쿼리러너를 생성해 쿼리만을 실행한다.', async () => {
+      const store: AlsStore = {
+        _id: Date.now().toString(),
+        parentPropagtionContext: {},
+      };
+      const log = jest.spyOn(mockQueryLogger, 'info');
+      const expectedTransactionLogs = [
+        'INSERT INTO "user"("created_at", "updated_at", "deleted_at", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["test user id1","test user password1","test email1","test phone number1"]',
+      ];
+
+      await alsService.run(store, async () => {
+        await userV1Service.createNever(dto1);
+
+        expectedTransactionLogs.forEach((expectedLog, idx) => {
+          expect(log).toHaveBeenNthCalledWith(idx + 1, expectedLog);
+        });
+
+        const userList = await userV1Service.findAll();
+        userList.forEach((user, idx) => {
+          expect(user).toMatchObject({
+            id: expect.any(Number),
+            created_at: expect.any(Date),
+            updated_at: expect.any(Date),
+            deleted_at: null,
+            ...getCreateUserDto(idx + 1),
           });
         });
       });

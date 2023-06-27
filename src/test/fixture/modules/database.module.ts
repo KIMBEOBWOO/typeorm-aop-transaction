@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../entities/user.entity';
 import { Workspace } from '../entities/workspace.entity';
+import { TypeORMLogger } from '../services/typeorm-logger';
 
 export const POSTGRES_CONNECTION = 'POSTGRES_CONNECTION';
 
@@ -19,8 +20,9 @@ export const POSTGRES_CONNECTION = 'POSTGRES_CONNECTION';
       synchronize: false,
       // Entity file path (always consider dockerfile)
       entities: [User, Workspace],
-      logging: ['query'],
-      logger: 'simple-console',
+      // logging: ['query'],
+      // logger: 'simple-console',
+      logger: new TypeORMLogger(['query']),
     }),
   ],
   providers: [],

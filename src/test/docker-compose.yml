@@ -11,13 +11,3 @@ services:
     volumes:
       - ./postgres:/var/lib/postgresql/data
       - ./sql/postgres:/docker-entrypoint-initdb.d
-  # # Local MySQL database container
-  # db-mysql:
-  #   container_name: db-mysql
-  #   image: mysql:8.0
-  #   ports:
-  #     - 3306:3306
-  #   environment:
-  #     - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-  #   volumes:
-  #     - ./mysql:/var/lib/mysql
