@@ -69,7 +69,7 @@ export class AlsTransactionDecorator
               propagation,
             );
 
-            return await method(...args);
+            return this.transactionService.runInTransaction(method, args);
           } else {
             // 진행중인 트랜잭션이 없으므로 새롭게 생성
             const queryRunner =
@@ -226,6 +226,53 @@ export class AlsTransactionDecorator
                 // 스토어 쿼리러너 세팅
                 _id: store._id,
                 queryRunner: notTransactionalQueryRunner,
+                parentPropagtionContext: {
+                  [propagation]: true, // REQUIRES_NEW 가 부모에 진행중임을 설정
+                },
+              },
+              async () => {
+                return await this.transactionService.runInTransaction(
+                  method,
+                  args,
+                );
+              },
+            );
+          }
+        } else if (propagation === PROPAGATION.SUPPORTS) {
+          if (
+            storeQueryRunner &&
+            storeQueryRunner.isTransactionActive &&
+            !parentPropagtionContext[PROPAGATION.REQUIRES_NEW]
+          ) {
+            this.logger.debug(
+              'Join Transaction',
+              store._id,
+              storeQueryRunner.connection.name,
+              methodName,
+              isolationLevel,
+              propagation,
+            );
+
+            return this.transactionService.runInTransaction(method, args);
+          } else {
+            // 진행중인 트랜잭션이 없으므로 새롭게 생성
+            const queryRunner =
+              this.transactionService.createConnection(connectionName);
+
+            this.logger.debug(
+              'Without Transaction',
+              store._id,
+              queryRunner.connection.name,
+              methodName,
+              isolationLevel,
+              propagation,
+            );
+
+            return await this.alsService.run(
+              {
+                // 스토어 쿼리러너 세팅
+                _id: store._id,
+                queryRunner: queryRunner,
                 parentPropagtionContext: {
                   [propagation]: true, // REQUIRES_NEW 가 부모에 진행중임을 설정
                 },
