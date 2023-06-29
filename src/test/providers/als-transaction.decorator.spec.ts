@@ -93,6 +93,26 @@ describe('AlsTransactionDecorator', () => {
       );
     });
 
+    it('Returns an Error if propagation option is not supported', async () => {
+      jest.spyOn(alsService, 'getStore').mockReturnValue(true as any);
+
+      await expect(
+        async () =>
+          await service.wrap({
+            metadata: {
+              propagation: 'NOT_SUPPORTED_PROPAGATION_OPTION' as any,
+            },
+            method: () => true,
+            methodName: 'test',
+            instance: null as never,
+          })(),
+      ).rejects.toThrow(
+        new Error(
+          'Propagation(NOT_SUPPORTED_PROPAGATION_OPTION) option not supported yet.',
+        ),
+      );
+    });
+
     describe('When the propagation property is REQUIRED', () => {
       const wrapParam: WrapParams<any, TransactionOptions> = {
         metadata: {
