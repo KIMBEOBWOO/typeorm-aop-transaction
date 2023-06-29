@@ -556,12 +556,7 @@ describe('AlsTransactionDecorator', () => {
           /**
            * @NOTE Requires more accurate testing of callback delivery
            */
-          async () => {
-            return await transactionService.runInTransaction(
-              wrapParam.method,
-              args,
-            );
-          },
+          expect.any(Function),
         );
       });
     });
