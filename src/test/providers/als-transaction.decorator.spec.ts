@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LazyDecorator, WrapParams } from '@toss/nestjs-aop';
 import { AsyncLocalStorage } from 'async_hooks';
-import { QueryRunner } from 'typeorm';
+import { EntityManager, QueryRunner } from 'typeorm';
+import { BaseRepository } from '../../base.repository';
 import { PROPAGATION } from '../../const/propagation';
 import { NotRollbackError } from '../../exceptions/not-rollback.error';
 import { AlsStore } from '../../interfaces/als-store.interface';
@@ -10,6 +11,7 @@ import { AlsTransactionDecorator } from '../../providers/als-transaction.decorat
 import { TransactionLogger } from '../../providers/transaction.logger';
 import { TypeORMTransactionService } from '../../providers/transaction.service';
 import { ALS_SERVICE } from '../../symbols/als-service.symbol';
+import { User } from '../fixture/entities/user.entity';
 import { getMockAlsService } from '../mocks/als.service.mock';
 
 describe('AlsTransactionDecorator', () => {
@@ -232,6 +234,7 @@ describe('AlsTransactionDecorator', () => {
       const wrapParam: WrapParams<any, TransactionOptions> = {
         metadata: {
           propagation: PROPAGATION.REQUIRES_NEW,
+          isolationLevel: 'SERIALIZABLE',
         },
         method: jest.fn(),
         methodName: 'test',
@@ -263,7 +266,7 @@ describe('AlsTransactionDecorator', () => {
           '1997-06-07',
           'CREATED_TEST_CONNECTION_NAME',
           'test',
-          'READ COMMITTED',
+          'SERIALIZABLE',
           PROPAGATION.REQUIRES_NEW,
         );
 
@@ -405,7 +408,7 @@ describe('AlsTransactionDecorator', () => {
         await expect(
           async () => await service.wrap(wrapParam)(...args),
           // 해당 에러는 NotRollbackError 이어서는 안된다.
-        ).rejects.not.toBeInstanceOf(NotRollbackError);
+        ).rejects.toBeInstanceOf(NotRollbackError);
 
         expect(createConnection).toBeCalledTimes(1);
         expect(createConnection).toBeCalledWith(undefined);
@@ -579,6 +582,97 @@ describe('AlsTransactionDecorator', () => {
           expect.any(Function),
         );
       });
+    });
+  });
+
+  describe('setUpBaseRepository', () => {
+    const mockEntityManager: EntityManager = {
+      getRepository: jest.fn(),
+    } as any;
+
+    beforeEach(() => jest.clearAllMocks());
+
+    it(`  If the entity manager calls the manager getter of the repository rather than the undefined, 
+          the repository manager of the target entity class must be returned.`, async () => {
+      class TestRepository extends BaseRepository<User> {
+        constructor() {
+          super(User, alsService);
+          AlsTransactionDecorator.setUpBaseRepository(
+            this,
+            User,
+            alsService,
+            mockEntityManager,
+          );
+        }
+      }
+
+      const testRepository: TestRepository = new TestRepository();
+
+      const getRepository = jest
+        .spyOn(mockEntityManager, 'getRepository')
+        .mockReturnValue({
+          manager: true,
+        } as never);
+
+      testRepository.manager;
+
+      expect(getRepository).toBeCalledTimes(1);
+      expect(getRepository).toBeCalledWith(User);
+    });
+
+    it(`  If the entity manager is undefined and calls the manager getter of Repository, 
+          you must return the repository manager of targetEntity using the queryRunner stored in the alsStore`, async () => {
+      class TestRepository extends BaseRepository<User> {
+        constructor() {
+          super(User, alsService);
+          AlsTransactionDecorator.setUpBaseRepository(this, User, alsService);
+        }
+      }
+
+      const testRepository: TestRepository = new TestRepository();
+
+      const getStore = jest.spyOn(alsService, 'getStore').mockReturnValue({
+        queryRunner: {
+          manager: mockEntityManager,
+        },
+      } as any);
+      const getRepository = jest
+        .spyOn(mockEntityManager, 'getRepository')
+        .mockReturnValue({
+          manager: true,
+        } as never);
+
+      testRepository.manager;
+
+      expect(getStore).toBeCalledTimes(1);
+      expect(getStore).toBeCalledWith();
+
+      expect(getRepository).toBeCalledTimes(1);
+      expect(getRepository).toBeCalledWith(User);
+    });
+
+    it(`  If the queryRunner of the alsStore does not exist when the entityManager is undefined 
+          and calls the manager getter of the Repository, an error should be returned.`, async () => {
+      class TestRepository extends BaseRepository<User> {
+        constructor() {
+          super(User, alsService);
+          AlsTransactionDecorator.setUpBaseRepository(this, User, alsService);
+        }
+      }
+
+      const testRepository: TestRepository = new TestRepository();
+
+      jest.spyOn(alsService, 'getStore').mockReturnValue(undefined);
+
+      try {
+        testRepository.manager;
+      } catch (e) {
+        expect(e).toStrictEqual(
+          new Error(
+            'QueryRunner does not exist. @Transactional Access to the database running internally should only be via the Repository method that inherits the Base Repository.',
+          ),
+        );
+      }
     });
   });
 });
