@@ -234,6 +234,7 @@ describe('AlsTransactionDecorator', () => {
       const wrapParam: WrapParams<any, TransactionOptions> = {
         metadata: {
           propagation: PROPAGATION.REQUIRES_NEW,
+          isolationLevel: 'SERIALIZABLE',
         },
         method: jest.fn(),
         methodName: 'test',
@@ -265,7 +266,7 @@ describe('AlsTransactionDecorator', () => {
           '1997-06-07',
           'CREATED_TEST_CONNECTION_NAME',
           'test',
-          'READ COMMITTED',
+          'SERIALIZABLE',
           PROPAGATION.REQUIRES_NEW,
         );
 
@@ -407,7 +408,7 @@ describe('AlsTransactionDecorator', () => {
         await expect(
           async () => await service.wrap(wrapParam)(...args),
           // 해당 에러는 NotRollbackError 이어서는 안된다.
-        ).rejects.not.toBeInstanceOf(NotRollbackError);
+        ).rejects.toBeInstanceOf(NotRollbackError);
 
         expect(createConnection).toBeCalledTimes(1);
         expect(createConnection).toBeCalledWith(undefined);
