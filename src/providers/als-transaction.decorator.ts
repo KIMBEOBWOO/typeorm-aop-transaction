@@ -303,7 +303,7 @@ export class AlsTransactionDecorator
           throw new NotRollbackError(e);
         }
 
-        throw e;
+        throw new Error(e.message);
       }
     };
   }

@@ -456,18 +456,24 @@ describe('Tranaction Module', () => {
       ];
 
       await alsService.run(store, async () => {
-        await expect(
-          async () =>
-            await userV1Service.createRequried(dto1, {
-              afterCallback: async () => {
+        try {
+          await userV1Service.createRequried(dto1, {
+            afterCallback: async () => {
+              try {
                 await userV1Service.createNested(dto2, {
                   afterCallback: async () => {
                     throw new Error('NESTED ERROR');
                   },
                 });
-              },
-            }),
-        ).rejects.toThrow(new Error('NESTED ERROR'));
+              } catch (e) {
+                expect(e).toBeInstanceOf(NotRollbackError);
+              }
+            },
+          });
+        } catch (e) {
+          expect(e).not.toBeInstanceOf(NotRollbackError);
+          expect(e).toMatchObject(new Error('NESTED ERROR'));
+        }
 
         expectedTransactionLogs.forEach((expectedLog, idx) => {
           expect(log).toHaveBeenNthCalledWith(idx + 1, expectedLog);
@@ -775,12 +781,14 @@ describe('Tranaction Module', () => {
                   },
                 });
               } catch (e) {
+                // 부모가 롤백되어서는 안되므로 NotRollbackError 를 던져야한다.
                 expect(e).toBeInstanceOf(NotRollbackError);
+                throw e;
               }
             },
           });
         } catch (e) {
-          // 부모또한 REQUIRES_NEW 이므로 자신의 에러를 NotRollbackError 로 처리해야한다.
+          // 부모 또한 REQUIRES_NEW 이므로 자신의 에러를 NotRollbackError 로 처리해야한다.
           expect(e).toBeInstanceOf(NotRollbackError);
         }
 
