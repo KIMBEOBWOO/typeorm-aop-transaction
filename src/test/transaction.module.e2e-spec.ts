@@ -4,6 +4,7 @@ import { getDataSourceToken } from '@nestjs/typeorm';
 import { AsyncLocalStorage } from 'async_hooks';
 import { DataSource } from 'typeorm';
 import { PROPAGATION } from '../const/propagation';
+import { NotRollbackError } from '../exceptions/not-rollback.error';
 import { AlsStore } from '../interfaces/als-store.interface';
 import { ALS_SERVICE } from '../symbols/als-service.symbol';
 import { getCreateUserDto } from './fixture/data/test-data';
@@ -741,6 +742,61 @@ describe('Tranaction Module', () => {
 
         const userList = await userV1Service.findAll();
         expect(userList).toStrictEqual([]);
+      });
+    });
+  });
+
+  describe('Testing nested transactions', () => {
+    it('부모 트랜잭션이 REQUIRES_NEW 인 경우 자신의 오류로 인해 부모 트랜잭션이 롤백되어서는 안된다.', async () => {
+      const store: AlsStore = {
+        _id: Date.now().toString(),
+        parentPropagtionContext: {},
+      };
+      const log = jest.spyOn(mockQueryLogger, 'info');
+      const expectedTransactionLogs = [
+        'START TRANSACTION',
+        'SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
+        'INSERT INTO "user"("created_at", "updated_at", "deleted_at", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["test user id1","test user password1","test email1","test phone number1"]',
+        'START TRANSACTION',
+        'SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
+        'INSERT INTO "user"("created_at", "updated_at", "deleted_at", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["test user id2","test user password2","test email2","test phone number2"]',
+        'ROLLBACK',
+        'COMMIT',
+      ];
+
+      await alsService.run(store, async () => {
+        try {
+          await userV1Service.createRequriesNew(dto1, {
+            afterCallback: async () => {
+              try {
+                await userV1Service.createRequried(dto2, {
+                  afterCallback: () => {
+                    throw new Error('Child Error');
+                  },
+                });
+              } catch (e) {
+                expect(e).toBeInstanceOf(NotRollbackError);
+              }
+            },
+          });
+        } catch (e) {
+          // 부모또한 REQUIRES_NEW 이므로 자신의 에러를 NotRollbackError 로 처리해야한다.
+          expect(e).toBeInstanceOf(NotRollbackError);
+        }
+
+        expectedTransactionLogs.forEach((expectedLog, idx) => {
+          expect(log).toHaveBeenNthCalledWith(idx + 1, expectedLog);
+        });
+
+        const userList = await userV1Service.findAll();
+        expect(userList.length).toBe(1);
+        expect(userList[0]).toMatchObject({
+          id: expect.any(Number),
+          created_at: expect.any(Date),
+          updated_at: expect.any(Date),
+          deleted_at: null,
+          ...getCreateUserDto(1),
+        });
       });
     });
   });
