@@ -16,5 +16,5 @@
     "outDir": "dist",
   },
   "include": ["src/**/*", ".eslintrc.js"],
-  "exclude": ["node_modules", "dist", "temp", "src/test/*"]
+  "exclude": ["node_modules", "dist", "temp"]
 }

@@ -46,7 +46,6 @@ export class UserV1Service {
     user.password = dto.password;
     user.phone_number = dto.phone_number;
 
-    // 2
     await this.userRepository.insert(user);
 
     fixtureOption?.afterCallback && (await fixtureOption.afterCallback());
@@ -62,7 +61,6 @@ export class UserV1Service {
     user.password = dto.password;
     user.phone_number = dto.phone_number;
 
-    // 2
     await this.userRepository.insert(user);
 
     fixtureOption?.afterCallback && (await fixtureOption.afterCallback());
@@ -78,7 +76,24 @@ export class UserV1Service {
     user.password = dto.password;
     user.phone_number = dto.phone_number;
 
-    // 2
+    await this.userRepository.insert(user);
+
+    fixtureOption?.afterCallback && (await fixtureOption.afterCallback());
+  }
+
+  @Transactional({
+    propagation: PROPAGATION.SUPPORTS,
+  })
+  async createSupports(
+    dto: CreateUserDto,
+    fixtureOption?: ServiceFixtureOption,
+  ) {
+    const user = new User();
+    user.user_id = dto.user_id;
+    user.email = dto.email;
+    user.password = dto.password;
+    user.phone_number = dto.phone_number;
+
     await this.userRepository.insert(user);
 
     fixtureOption?.afterCallback && (await fixtureOption.afterCallback());

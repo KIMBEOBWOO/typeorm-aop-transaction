@@ -45,6 +45,7 @@ describe('AlsTransactionDecorator', () => {
           provide: TypeORMTransactionService,
           useValue: {
             createConnection: jest.fn().mockReturnValue(queryRunner),
+            runInTransaction: jest.fn(),
           },
         },
         {
@@ -92,6 +93,26 @@ describe('AlsTransactionDecorator', () => {
       );
     });
 
+    it('Returns an Error if propagation option is not supported', async () => {
+      jest.spyOn(alsService, 'getStore').mockReturnValue(true as any);
+
+      await expect(
+        async () =>
+          await service.wrap({
+            metadata: {
+              propagation: 'NOT_SUPPORTED_PROPAGATION_OPTION' as any,
+            },
+            method: () => true,
+            methodName: 'test',
+            instance: null as never,
+          })(),
+      ).rejects.toThrow(
+        new Error(
+          'Propagation(NOT_SUPPORTED_PROPAGATION_OPTION) option not supported yet.',
+        ),
+      );
+    });
+
     describe('When the propagation property is REQUIRED', () => {
       const wrapParam: WrapParams<any, TransactionOptions> = {
         metadata: {
@@ -117,7 +138,10 @@ describe('AlsTransactionDecorator', () => {
           },
         });
         const debug = jest.spyOn(logger, 'debug');
-        const targetMethod = jest.spyOn(wrapParam, 'method');
+        const runInTransaction = jest.spyOn(
+          transactionService,
+          'runInTransaction',
+        );
 
         (await service.wrap(wrapParam))(...args);
 
@@ -131,8 +155,8 @@ describe('AlsTransactionDecorator', () => {
           PROPAGATION.REQUIRED,
         );
 
-        expect(targetMethod).toBeCalledTimes(1);
-        expect(targetMethod).toBeCalledWith(1, 2, 3, 4);
+        expect(runInTransaction).toBeCalledTimes(1);
+        expect(runInTransaction).toBeCalledWith(wrapParam.method, args);
       });
 
       it(`  If the context does not have a query runner, a new transaction must be created`, async () => {
@@ -456,6 +480,97 @@ describe('AlsTransactionDecorator', () => {
             queryRunner: storeQueryRunner,
             parentPropagtionContext: {
               [PROPAGATION.NESTED]: true, // REQUIRES_NEW 가 부모에 진행중임을 설정
+            },
+          },
+          /**
+           * @NOTE Requires more accurate testing of callback delivery
+           */
+          expect.any(Function),
+        );
+      });
+    });
+
+    describe('When the propagation property is SUPPORTS', () => {
+      const wrapParam: WrapParams<any, TransactionOptions> = {
+        metadata: {
+          propagation: PROPAGATION.SUPPORTS,
+        },
+        method: jest.fn(),
+        methodName: 'test',
+        instance: null as never,
+      };
+      const args = [1, 2, 3, 4];
+
+      it(`  If the context has a running parent transaction and the propagation property 
+            of that transaction is not REQUIRES_NEW, you must participate in the parent transaction`, async () => {
+        jest.spyOn(alsService, 'getStore').mockReturnValue({
+          _id: '1997-06-07',
+          parentPropagtionContext: {},
+          queryRunner: {
+            ...queryRunner,
+            isTransactionActive: true,
+            connection: {
+              name: 'STORE_CONNECTION_NAME',
+            } as any,
+          },
+        });
+        const debug = jest.spyOn(logger, 'debug');
+        const runInTransaction = jest.spyOn(
+          transactionService,
+          'runInTransaction',
+        );
+
+        (await service.wrap(wrapParam))(...args);
+
+        expect(debug).toBeCalledTimes(1);
+        expect(debug).toBeCalledWith(
+          'Join Transaction',
+          '1997-06-07',
+          'STORE_CONNECTION_NAME',
+          'test',
+          'READ COMMITTED',
+          PROPAGATION.SUPPORTS,
+        );
+
+        expect(runInTransaction).toBeCalledTimes(1);
+        expect(runInTransaction).toBeCalledWith(wrapParam.method, args);
+      });
+
+      it(`  If the context does not have a query runner, Run SQL query only.`, async () => {
+        jest.spyOn(alsService, 'getStore').mockReturnValue({
+          _id: '1997-06-07',
+          parentPropagtionContext: {},
+        });
+        const createConnection = jest.spyOn(
+          transactionService,
+          'createConnection',
+        );
+        const debug = jest.spyOn(logger, 'debug');
+        const run = jest.spyOn(alsService, 'run');
+
+        (await service.wrap(wrapParam))(...args);
+
+        expect(createConnection).toBeCalledTimes(1);
+        expect(createConnection).toBeCalledWith(undefined);
+
+        expect(debug).toBeCalledTimes(1);
+        expect(debug).toBeCalledWith(
+          'Without Transaction',
+          '1997-06-07',
+          'CREATED_TEST_CONNECTION_NAME',
+          'test',
+          'READ COMMITTED',
+          PROPAGATION.SUPPORTS,
+        );
+
+        expect(run).toBeCalledTimes(1);
+        expect(run).toBeCalledWith(
+          {
+            // 스토어 쿼리러너 세팅
+            _id: '1997-06-07',
+            queryRunner: queryRunner,
+            parentPropagtionContext: {
+              [PROPAGATION.SUPPORTS]: true, // REQUIRES_NEW 가 부모에 진행중임을 설정
             },
           },
           /**

@@ -69,7 +69,7 @@ export class AlsTransactionDecorator
               propagation,
             );
 
-            return await method(...args);
+            return this.transactionService.runInTransaction(method, args);
           } else {
             // 진행중인 트랜잭션이 없으므로 새롭게 생성
             const queryRunner =
@@ -238,6 +238,53 @@ export class AlsTransactionDecorator
               },
             );
           }
+        } else if (propagation === PROPAGATION.SUPPORTS) {
+          if (
+            storeQueryRunner &&
+            storeQueryRunner.isTransactionActive &&
+            !parentPropagtionContext[PROPAGATION.REQUIRES_NEW]
+          ) {
+            this.logger.debug(
+              'Join Transaction',
+              store._id,
+              storeQueryRunner.connection.name,
+              methodName,
+              isolationLevel,
+              propagation,
+            );
+
+            return this.transactionService.runInTransaction(method, args);
+          } else {
+            // 진행중인 트랜잭션이 없으므로 새롭게 생성
+            const queryRunner =
+              this.transactionService.createConnection(connectionName);
+
+            this.logger.debug(
+              'Without Transaction',
+              store._id,
+              queryRunner.connection.name,
+              methodName,
+              isolationLevel,
+              propagation,
+            );
+
+            return await this.alsService.run(
+              {
+                // 스토어 쿼리러너 세팅
+                _id: store._id,
+                queryRunner: queryRunner,
+                parentPropagtionContext: {
+                  [propagation]: true, // REQUIRES_NEW 가 부모에 진행중임을 설정
+                },
+              },
+              async () => {
+                return await this.transactionService.runInTransaction(
+                  method,
+                  args,
+                );
+              },
+            );
+          }
         } else {
           throw new Error(
             `Propagation(${metadata.propagation}) option not supported yet.`,
@@ -246,12 +293,12 @@ export class AlsTransactionDecorator
       } catch (e) {
         if (
           // 상위 진행되고 있는 트랜잭션이 REQUIRES_NEW 인 경우 내가 던진 에러는 롤백하면 안됨
-          parentPropagtionContext[PROPAGATION.REQUIRES_NEW] ||
+          parentPropagtionContext?.[PROPAGATION.REQUIRES_NEW] ||
           // 현재 진행 중인 트랜잭션이 REQUIRES_NEW 인 경우
           metadata?.propagation === PROPAGATION.REQUIRES_NEW ||
           // 현재 진행 중인 트랜잭션이 NESTED 이고 부모 트랜잭션이 있는 경우(중첩) 내가 던진 에러는 롤백하면 안됨
           (metadata?.propagation === PROPAGATION.NESTED &&
-            store.queryRunner !== undefined)
+            store?.queryRunner !== undefined)
         ) {
           throw new NotRollbackError(e);
         }
