@@ -3,18 +3,17 @@
 <!-- code_chunk_output -->
 
 - [Outline](#outline)
-- [Installation](#installation)
-- [Usage](#usage)
+- [Initialization](#initialization)
   - [step 1](#step-1)
-  - [step2](#step2)
-  - [step 3-1](#step-3-1)
-  - [step 3-2 (without Custom repository)](#step-3-2-without-custom-repository)
-  - [step 4](#step-4)
+  - [step 2-1 (with Custom repository)](#step-2-1-with-custom-repository)
+  - [step 2-2 (without Custom repository)](#step-2-2-without-custom-repository)
+  - [step 3](#step-3)
 - [Propagations](#propagations)
   - [REQUIRES_NEW](#requires_new)
   - [REQUIRED](#required)
   - [NESTED](#nested)
   - [NEVER](#never)
+  - [SUPPORTS](#supports)
 - [Future Support Plan](#future-support-plan)
 - [Referenced Libraries](#referenced-libraries)
 
@@ -30,21 +29,7 @@ We used [@toss/aop](https://www.npmjs.com/package/@toss/nestjs-aop) for AOP impl
 
 <br/>
 
-## Installation
-
-```bash
-npm install --save typeorm-aop-transaction
-```
-
-Or
-
-```bash
-yarn add typeorm-aop-transaction
-```
-
-<br/>
-
-## Usage
+## Initialization
 
 ### step 1
 
@@ -93,11 +78,7 @@ The defaultConnectionName is the connectionName that you defined when you initia
 export class DatabaseModule {}
 ```
 
-<br/>
-
-### step2
-
-**Inherits the Base Repository provided when defining the Repository to use.**
+### step 2-1 (with Custom repository)
 
 Add the `@CustomTransactionRepository` decorator to dynamically register the Custom Repository using the Transaction Module. _(be changed v.1.3.0^)_
 
@@ -118,24 +99,6 @@ export class UserRepository extends BaseRepository<User> {}
 export class UserRepository extends BaseRepository<User> {}
 ```
 
-- **Lower than v1.3.0**
-  **Inherits the Base Repository provided when defining the Repository to use.**
-
-  ```tsx
-  import { Injectable } from '@nestjs/common';
-  import { User } from 'src/database/entities/user.entity';
-  import { BaseRepository } from 'typeorm-aop-transaction';
-
-  @Injectable()
-  export class UserRepository extends BaseRepository<User> {}
-  ```
-
-  It works in a way that overrides the EntityManger internally, so you can use all the functions of the existing repository.
-
-<br/>
-
-### step 3-1
-
 **You can use the setRepository static method to register a CustomRepository as a provider.**
 
 ```tsx
@@ -148,29 +111,9 @@ export class UserRepository extends BaseRepository<User> {}
 export class UserModule {}
 ```
 
-- **Lower than v1.3.0**
-  **Inherits the Base Repository provided when defining the Repository to use.**
-  ```tsx
-  @Module({
-    controllers: [UserController],
-    providers: [
-      UserService,
-      {
-        provide: USER_MODULE_INJECTOR.USER_REPOSITORY, // <-- User Repository provide symbol
-        useFactory: (alsService: AsyncLocalStorage<AlsStore>) => {
-          return new UserRepository(User, alsService); // <-- inject AsyncStorage
-        },
-        inject: [AsyncLocalStorage],
-      },
-    ],
-  })
-  export class UserModule {}
-  ```
-  It works in a way that overrides the EntityManger internally, so you can use all the functions of the existing repository.
-
 <br/>
 
-### step 3-2 (without Custom repository)
+### step 2-2 (without Custom repository)
 
 **If you are not using Custom Repository, you can register and use the Entity class.**
 
@@ -197,7 +140,7 @@ export class UserService {
 
 <br/>
 
-### step 4
+### step 3
 
 Use `@Transactionl` to apply AOP at the method level of the Service Class.
 
@@ -218,7 +161,9 @@ export class UserService {
     await this.userRepository.insert(user);
   }
 
-  @Transactional()
+  @Transactional({
+		propagation: PROPAGATION.SUPPORTS
+	})
   async findAll(): Promise<User[]> {
     const user = await this.userRepository.find({
       order: {
@@ -236,7 +181,7 @@ The currently supported proposals are "REQUIRES_NEW", "REQUIRED", “NESETED”,
 
 ## Propagations
 
-Currently supported transaction propagation levels are REQUIRES_NEW, REQUIRED, NESTED, and NEVER.
+Currently supported transaction propagation levels are **_REQUIRES_NEW, REQUIRED, NESTED, NEVER and SUPPORTS_**
 
 <br/>
 
@@ -329,15 +274,59 @@ query: COMMIT
 
 ### NEVER
 
-It will be updated later.
+If the `NEVER` propagation option is set, it defaults to returning an error if a parent transaction exists.
+
+```tsx
+[Nest] 15178  - 2023. 07. 02. 오후 5:35:17   DEBUG [Transactional] 1688286917592|POSTGRES_CONNECTION|create|READ COMMITTED|REQUIRED - New Transaction
+query: START TRANSACTION
+query: SET TRANSACTION ISOLATION LEVEL READ COMMITTED
+query: INSERT INTO "user"("created_at", "updated_at", "deleted_at", "id", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["c2d-5b8df90d6607","wjdrms15!","qjqdn1568@naver.comxx","+82-10-3252-2568"]
+query: ROLLBACK
+**[Nest] 15178  - 2023. 07. 02. 오후 5:35:17   ERROR [ExceptionsHandler] Attempting to join a transaction in progress. Methods with NEVER properties cannot run within a transaction boundary**
+Error: Attempting to join a transaction in progress. Methods with NEVER properties cannot run within a transaction boundary
+    at AlsTransactionDecorator.<anonymous> (/Users/beobwoo/dev/beebee/server/node_modules/typeorm-aop-transaction/src/providers/als-transaction.decorator.ts:305:15)
+    at Generator.throw (<anonymous>)
+    at rejected (/Users/beobwoo/dev/beebee/server/node_modules/typeorm-aop-transaction/dist/providers/als-transaction.decorator.js:18:65)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+```
+
+If the `NEVER` propagation option is normally processable, **it does not create a transaction it only executes SQL queries.**
+
+```tsx
+[Nest] 15328  - 2023. 07. 02. 오후 5:36:42   DEBUG [Transactional] 1688287002875|POSTGRES_CONNECTION|findAll|READ COMMITTED|NEVER - No Transaction
+query: SELECT "*" FROM "user" "User" WHERE "User"."deleted_at" IS NULL ORDER BY "User"."created_at" DESC
+```
+
+<br/>
+
+### SUPPORTS
+
+If the `SUPPORTS` transaction option is set and the parent transaction does not exist, it behaves the same as the `NEVER` propagation option. Therefore, **it only runs SQL Query without any transactions.**
+
+```tsx
+[Nest] 15328  - 2023. 07. 02. 오후 5:36:42   DEBUG [Transactional] 1688287002875|POSTGRES_CONNECTION|findAll|READ COMMITTED|NEVER - No Transaction
+query: SELECT "*" FROM "user" "User" WHERE "User"."deleted_at" IS NULL ORDER BY "User"."created_at" DESC
+```
+
+If the parent transaction is in progress and is available to participate, it will behave the same way as the `REQUIRED` propagation option. Therefore, **participate in transactions in progress.**
+
+```tsx
+[Nest] 15831  - 2023. 07. 02. 오후 5:41:09   DEBUG [Transactional] 1688287269077|POSTGRES_CONNECTION|create|READ COMMITTED|NESTED - New Transaction
+query: START TRANSACTION
+query: SET TRANSACTION ISOLATION LEVEL READ COMMITTED
+query: INSERT INTO "user"("created_at", "updated_at", "deleted_at", "id", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["b0f-a42a40a6ba7f","wjdrms15!","qjqdn1568@naver.comxx","+82-10-3252-2568"]
+[Nest] 15831  - 2023. 07. 02. 오후 5:41:09   DEBUG [Transactional] 1688287269077|POSTGRES_CONNECTION|create2|READ COMMITTED|**SUPPORTS - Join Transaction // <-- join**
+query: INSERT INTO "user"("created_at", "updated_at", "deleted_at", "id", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["42b-d4bbdccc8c9a","wjdrms15!","2222 qjqdn1568@naver.comxx","+82-10-3252-2568"]
+query: COMMIT
+```
 
 <br/>
 
 ## Future Support Plan
 
-- _add propagation option : ~~NESTED~~, NOT_SUPPORTED, SUPPORTS, ~~NEVER~~, MANDATORY_
-- _add Unit Test_
-- _add integration test_
+- _add propagation option : ~~NESTED~~, NOT_SUPPORTED, ~~SUPPORTS~~, ~~NEVER~~, MANDATORY_
+- _~~add Unit Test~~_
+- _~~add integration test~~_
 - _add Rollback, Commit Callback Hooks_
 - ~~_remove Loggers_~~
 
