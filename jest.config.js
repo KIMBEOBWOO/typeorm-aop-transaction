@@ -8,4 +8,5 @@ module.exports = {
       tsconfig: 'tsconfig.json',
     },
   },
+  collectCoverageFrom: ['!src/index.ts', '!src/test/fixture/**/*.ts'],
 };
