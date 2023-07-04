@@ -136,6 +136,7 @@ export class UserService {
     @InjectTransactionRepository(User) // <-- add this decorator
     private readonly userRepository: UserRepository,
   ) {}
+  ...
 ```
 
 <br/>
@@ -162,8 +163,8 @@ export class UserService {
   }
 
   @Transactional({
-		propagation: PROPAGATION.SUPPORTS
-	})
+    propagation: PROPAGATION.SUPPORTS
+  })
   async findAll(): Promise<User[]> {
     const user = await this.userRepository.find({
       order: {
