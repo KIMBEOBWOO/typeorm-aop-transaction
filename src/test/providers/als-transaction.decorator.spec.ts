@@ -4,7 +4,6 @@ import { AsyncLocalStorage } from 'async_hooks';
 import { EntityManager, QueryRunner } from 'typeorm';
 import { BaseRepository } from '../../base.repository';
 import { PROPAGATION } from '../../const/propagation';
-import { NotRollbackError } from '../../exceptions/not-rollback.error';
 import { AlsStore } from '../../interfaces/als-store.interface';
 import { TransactionOptions } from '../../interfaces/transaction-option.interface';
 import { AlsTransactionDecorator } from '../../providers/als-transaction.decorator';
@@ -224,9 +223,11 @@ describe('AlsTransactionDecorator', () => {
           throw new Error('TARGET METHOD ERROR');
         });
 
-        await expect(
-          async () => await service.wrap(wrapParam)(...args),
-        ).rejects.toBeInstanceOf(NotRollbackError);
+        try {
+          await service.wrap(wrapParam)(...args);
+        } catch (e) {
+          expect(e._not_rollback).toBe(true);
+        }
       });
     });
 
@@ -405,10 +406,11 @@ describe('AlsTransactionDecorator', () => {
             Promise.reject(new Error('TARGET METHOD ERROR')),
           );
 
-        await expect(
-          async () => await service.wrap(wrapParam)(...args),
-          // 해당 에러는 NotRollbackError 이어서는 안된다.
-        ).rejects.toBeInstanceOf(NotRollbackError);
+        try {
+          await service.wrap(wrapParam)(...args);
+        } catch (e) {
+          expect(e._not_rollback).toBe(true);
+        }
 
         expect(createConnection).toBeCalledTimes(1);
         expect(createConnection).toBeCalledWith(undefined);
@@ -461,9 +463,11 @@ describe('AlsTransactionDecorator', () => {
             Promise.reject(new Error('TARGET METHOD ERROR')),
           );
 
-        await expect(
-          async () => await service.wrap(wrapParam)(...args),
-        ).rejects.toBeInstanceOf(NotRollbackError);
+        try {
+          await service.wrap(wrapParam)(...args);
+        } catch (e) {
+          expect(e._not_rollback).toBe(true);
+        }
 
         expect(debug).toBeCalledTimes(1);
         expect(debug).toBeCalledWith(

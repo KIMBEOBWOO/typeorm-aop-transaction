@@ -7,7 +7,6 @@ import { PROPAGATION, Propagation } from '../const/propagation';
 import { TRANSACTION_DECORATOR } from '../symbols/transaction-decorator.symbol';
 import { TypeORMTransactionService } from './transaction.service';
 import { AlsStore } from '../interfaces/als-store.interface';
-import { NotRollbackError } from '../exceptions/not-rollback.error';
 import { TransactionLogger } from './transaction.logger';
 import { Inject } from '@nestjs/common';
 import { ALS_SERVICE } from '../symbols/als-service.symbol';
@@ -299,10 +298,11 @@ export class AlsTransactionDecorator
           // 현재 진행 중인 트랜잭션이 NESTED 이고 부모 트랜잭션이 있는 경우(중첩) 내가 던진 에러는 롤백하면 안됨
           metadata?.propagation === PROPAGATION.NESTED
         ) {
-          throw new NotRollbackError(e);
+          e._not_rollback = true;
+          throw e;
         }
 
-        throw new Error(e.message);
+        throw e;
       }
     };
   }

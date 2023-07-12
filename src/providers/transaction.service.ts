@@ -1,7 +1,6 @@
 import { QueryRunner } from 'typeorm';
 import { IsolationLevel } from 'typeorm/driver/types/IsolationLevel';
 import { DataSourceMapService } from './data-source-map.service';
-import { NotRollbackError } from '../exceptions/not-rollback.error';
 import { Inject } from '@nestjs/common';
 import { DATA_SOURCE_MAP_SERVICE } from '../symbols/data-source-map.service.symbol';
 
@@ -61,7 +60,7 @@ export class TypeORMTransactionService {
 
       return result;
     } catch (e) {
-      if (e instanceof NotRollbackError) {
+      if (e._not_rollback === true) {
         // 상위에 NestedTransacdtion 이 있는 경우 롤백하지 않음
         await queryRunner.commitTransaction();
       } else {
