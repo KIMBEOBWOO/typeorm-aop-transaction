@@ -4,7 +4,6 @@ import { getDataSourceToken } from '@nestjs/typeorm';
 import { AsyncLocalStorage } from 'async_hooks';
 import { DataSource } from 'typeorm';
 import { PROPAGATION } from '../const/propagation';
-import { NotRollbackError } from '../exceptions/not-rollback.error';
 import { AlsStore } from '../interfaces/als-store.interface';
 import { ALS_SERVICE } from '../symbols/als-service.symbol';
 import { getCreateUserDto } from './fixture/data/test-data';
@@ -466,12 +465,12 @@ describe('Tranaction Module', () => {
                   },
                 });
               } catch (e) {
-                expect(e).toBeInstanceOf(NotRollbackError);
+                expect(e).toBeInstanceOf(Error);
               }
             },
           });
         } catch (e) {
-          expect(e).not.toBeInstanceOf(NotRollbackError);
+          expect(e).not.toBeInstanceOf(Error);
           expect(e).toMatchObject(new Error('NESTED ERROR'));
         }
 
@@ -782,14 +781,14 @@ describe('Tranaction Module', () => {
                 });
               } catch (e) {
                 // 부모가 롤백되어서는 안되므로 NotRollbackError 를 던져야한다.
-                expect(e).toBeInstanceOf(NotRollbackError);
+                expect(e).toBeInstanceOf(Error);
                 throw e;
               }
             },
           });
         } catch (e) {
           // 부모 또한 REQUIRES_NEW 이므로 자신의 에러를 NotRollbackError 로 처리해야한다.
-          expect(e).toBeInstanceOf(NotRollbackError);
+          expect(e).toBeInstanceOf(Error);
         }
 
         expectedTransactionLogs.forEach((expectedLog, idx) => {
@@ -806,6 +805,28 @@ describe('Tranaction Module', () => {
           ...getCreateUserDto(1),
         });
       });
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('The error thrown by the target method should be returned as it is.', async () => {
+      const store: AlsStore = {
+        _id: Date.now().toString(),
+        parentPropagtionContext: {},
+      };
+      class TestError extends Error {}
+
+      try {
+        await alsService.run(store, async () => {
+          await userV1Service.createNested(dto1, {
+            afterCallback: async () => {
+              throw new TestError('TEST ERROR');
+            },
+          });
+        });
+      } catch (e) {
+        expect(e).toBeInstanceOf(TestError);
+      }
     });
   });
 });

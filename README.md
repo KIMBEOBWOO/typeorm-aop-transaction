@@ -15,6 +15,7 @@
   - [NEVER](#never)
   - [SUPPORTS](#supports)
 - [Future Support Plan](#future-support-plan)
+- [Test Coverage](#test-coverage)
 - [Referenced Libraries](#referenced-libraries)
 
 <!-- /code_chunk_output -->
@@ -77,6 +78,8 @@ The defaultConnectionName is the connectionName that you defined when you initia
 })
 export class DatabaseModule {}
 ```
+
+<br/>
 
 ### step 2-1 (with Custom repository)
 
@@ -187,8 +190,6 @@ Currently supported transaction propagation levels are **_REQUIRES_NEW, REQUIRED
 <br/>
 
 ### REQUIRES_NEW
-
-`REQUIRES_NEW` propagation level starts a new transaction regardless of the existence of a parent transaction. Moreover, this newly started transaction is committed or rolled back independently of the nested or parent transaction. Here is an example for better understanding.
 
 `REQUIRES_NEW` propagation level starts a new transaction regardless of the existence of a parent transaction. Moreover, this newly started transaction is committed or rolled back independently of the nested or parent transaction. Here is an example for better understanding.
 
@@ -330,6 +331,45 @@ query: COMMIT
 - _~~add integration test~~_
 - _add Rollback, Commit Callback Hooks_
 - ~~_remove Loggers_~~
+
+<br/>
+
+## Test Coverage
+
+| File                                       | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s |
+| ------------------------------------------ | ------- | -------- | ------- | ------- | ----------------- |
+| All files                                  | 100     | 100      | 100     | 100     |
+| src                                        | 100     | 100      | 100     | 100     |
+| base.repository.ts                         | 100     | 100      | 100     | 100     |
+| src/const                                  | 100     | 100      | 100     | 100     |
+| custom-repository-metadata.ts              | 100     | 100      | 100     | 100     |
+| propagation.ts                             | 100     | 100      | 100     | 100     |
+| src/decorators                             | 100     | 100      | 100     | 100     |
+| custom-transaction-repository.decorator.ts | 100     | 100      | 100     | 100     |
+| inject-transaction-repository.decorator.ts | 100     | 100      | 100     | 100     |
+| transactional.decorator.ts                 | 100     | 100      | 100     | 100     |
+| src/exceptions                             | 100     | 100      | 100     | 100     |
+| not-rollback.error.ts                      | 100     | 100      | 100     | 100     |
+| src/modules                                | 100     | 100      | 100     | 100     |
+| transaciton.module.ts                      | 100     | 100      | 100     | 100     |
+| src/providers                              | 100     | 100      | 100     | 100     |
+| als-transaction.decorator.ts               | 100     | 100      | 100     | 100     |
+| data-source-map.service.ts                 | 100     | 100      | 100     | 100     |
+| transaction.logger.ts                      | 100     | 100      | 100     | 100     |
+| transaction.middleware.ts                  | 100     | 100      | 100     | 100     |
+| transaction.service.ts                     | 100     | 100      | 100     | 100     |
+| src/symbols                                | 100     | 100      | 100     | 100     |
+| als-service.symbol.ts                      | 100     | 100      | 100     | 100     |
+| data-source-map.service.symbol.ts          | 100     | 100      | 100     | 100     |
+| transaciton-module-option.symbol.ts        | 100     | 100      | 100     | 100     |
+| transaction-decorator.symbol.ts            | 100     | 100      | 100     | 100     |
+| src/test/mocks                             | 100     | 100      | 100     | 100     |
+| als.service.mock.ts                        | 100     | 100      | 100     | 100     |
+| discovery.service.mock.ts                  | 100     | 100      | 100     | 100     |
+| transaction-module-option.mock.ts          | 100     | 100      | 100     | 100     |
+| src/utils                                  | 100     | 100      | 100     | 100     |
+| is-base-repository-prototype.ts            | 100     | 100      | 100     | 100     |
+| is-typeorm-entity.ts                       | 100     | 100      | 100     | 100     |
 
 <br/>
 
