@@ -4,7 +4,10 @@ import { AlsStore, AlsTransactionDecorator, BaseRepository } from '..';
 import { DataSourceMapService } from '../providers/data-source-map.service';
 import { TRANSACTION_MODULE_OPTION } from '../symbols/transaciton-module-option.symbol';
 import { TransactionLogger } from '../providers/transaction.logger';
-import { TransactionModuleOption } from '../interfaces/transaction-module-option.interface';
+import {
+  TransactionModuleOption,
+  TransactionModuleOptionInput,
+} from '../interfaces/transaction-module-option.interface';
 import { TypeORMTransactionService } from '../providers/transaction.service';
 import { AsyncLocalStorage } from 'async_hooks';
 import { ALS_SERVICE } from '../symbols/als-service.symbol';
@@ -29,7 +32,7 @@ import { DATA_SOURCE_MAP_SERVICE } from '../symbols/data-source-map.service.symb
 export class TransactionModule {
   private static readonly DEFAULT_TYPEORM_CONNECTION_NAME = 'default';
 
-  static regist(options?: TransactionModuleOption): DynamicModule {
+  static regist(options?: TransactionModuleOptionInput): DynamicModule {
     return {
       module: TransactionModule,
       providers: [
