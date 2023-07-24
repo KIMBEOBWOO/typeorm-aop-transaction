@@ -1,8 +1,8 @@
-export interface TransactionModuleOption {
+export interface TransactionModuleOptionInput {
   /**
    * default TypeORM database connection name
    */
-  defaultConnectionName: string;
+  defaultConnectionName?: string;
 
   /**
    * Specifies whether the transaction is logged for execution.
@@ -10,4 +10,11 @@ export interface TransactionModuleOption {
    * the transaction progress to the console.
    */
   logging?: 'all' | 'log' | 'debug' | 'error';
+}
+
+export interface TransactionModuleOption extends TransactionModuleOptionInput {
+  /**
+   * The connection name is required for the Transaction Module Option
+   */
+  defaultConnectionName: string;
 }
