@@ -14,6 +14,7 @@
   - [NESTED](#nested)
   - [NEVER](#never)
   - [SUPPORTS](#supports)
+- [Logging](#logging)
 - [Future Support Plan](#future-support-plan)
 - [Test Coverage](#test-coverage)
 - [Referenced Libraries](#referenced-libraries)
@@ -26,7 +27,7 @@
 
 In Nest.js, the library allows for the establishment of TypeORM Transaction boundaries via AOP. This approach to transactional business logic takes inspiration from the Spring Framework's non-invasive methodology. There is a good library called [typeorm-transactional-cls-hooked](https://www.npmjs.com/package/typeorm-transactional-cls-hooked) but it is not compatible with `typeorm 0.3^` or higher.
 
-We used [@toss/aop](https://www.npmjs.com/package/@toss/nestjs-aop) for AOP implementation and it is compatible with custom AOP decoder implemented using that library. In addition, much of the code in the [typeorm-transactional-cls-hooked](https://www.npmjs.com/package/typeorm-transactional-cls-hooked) library was referenced to implement the Spring Transaction Synchronization Pool. **I**nternally, use Nest.js's [AsyncStorage](https://docs.nestjs.com/recipes/async-local-storage) to manage resources in TypeORM during the request lifecycle.
+We used [@toss/aop](https://www.npmjs.com/package/@toss/nestjs-aop) for AOP implementation and it is compatible with custom AOP decoder implemented using that library. In addition, much of the code in the [typeorm-transactional-cls-hooked](https://www.npmjs.com/package/typeorm-transactional-cls-hooked) library was referenced to implement the Spring Transaction Synchronization Pool. Internally, use Nest.js's [AsyncStorage](https://docs.nestjs.com/recipes/async-local-storage) to manage resources in TypeORM during the request lifecycle.
 
 <br/>
 
@@ -38,15 +39,13 @@ To use this library, you must register the Transaction Module with the App Modul
 
 ```tsx
 import { MiddlewareConsumer, Module } from '@nestjs/common';
-import { TransactionModule } from 'typeorm-aop-transaction';
-import { TransactionMiddleware } from 'typeorm-aop-transaction';
+import {
+  TransactionMiddleware,
+  TransactionModule,
+} from 'typeorm-aop-transaction';
 
 @Module({
-  imports: [
-    TransactionModule.regist({
-      defaultConnectionName: 'POSTGRES_CONNECTION',
-    }),
-  ],
+  imports: [TransactionModule.regist()],
   controllers: [],
   providers: [],
 })
@@ -57,10 +56,35 @@ export class AppModule {
 }
 ```
 
-The defaultConnectionName is the connectionName that you defined when you initialized the TypeORM module, DataSource.
+<br />
+
+If you used the connection name when registering a TypeORM Module, you must enter it in the `defaultConnectionName` property.
+The `defaultConnectionName` is the `name` that you defined when you initialized the TypeORM module, DataSource.
 
 ```tsx
-// example
+// app.module.ts
+import { MiddlewareConsumer, Module } from '@nestjs/common';
+import { TransactionModule } from 'typeorm-aop-transaction';
+import { TransactionMiddleware } from 'typeorm-aop-transaction';
+
+@Module({
+  imports: [
+    TransactionModule.regist({
+      defaultConnectionName: 'POSTGRES_CONNECTION', // <-- set specific typeorm connection name
+    }),
+  ],
+  controllers: [],
+  providers: [],
+})
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TransactionMiddleware).forRoutes('*');
+  }
+}
+
+...
+
+// (example) database.module.ts
 @Module({
   imports: [
     // Postgres Database
@@ -156,9 +180,7 @@ export class UserService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  @Transactional({
-    propagation: PROPAGATION.REQUIRED
-  })
+  @Transactional()
   async create(dto: CreateUserDto): Promise<void> {
     const user = this.userMapper.to(User, dto);
 
@@ -186,6 +208,7 @@ The currently supported proposals are "REQUIRES_NEW", "REQUIRED", “NESETED”,
 ## Propagations
 
 Currently supported transaction propagation levels are **_REQUIRES_NEW, REQUIRED, NESTED, NEVER and SUPPORTS_**
+`@Transactional` default propagation option is **_REQUIRED_**.
 
 <br/>
 
@@ -320,6 +343,33 @@ query: INSERT INTO "user"("created_at", "updated_at", "deleted_at", "id", "user_
 [Nest] 15831  - 2023. 07. 02. 오후 5:41:09   DEBUG [Transactional] 1688287269077|POSTGRES_CONNECTION|create2|READ COMMITTED|**SUPPORTS - Join Transaction // <-- join**
 query: INSERT INTO "user"("created_at", "updated_at", "deleted_at", "id", "user_id", "password", "email", "phone_number") VALUES (DEFAULT, DEFAULT, DEFAULT, DEFAULT, $1, $2, $3, $4) RETURNING "created_at", "updated_at", "deleted_at", "id" -- PARAMETERS: ["42b-d4bbdccc8c9a","wjdrms15!","2222 qjqdn1568@naver.comxx","+82-10-3252-2568"]
 query: COMMIT
+```
+
+<br/>
+
+## Logging
+
+If you want to log the generation and participation of transactions according to the propagation option, pass the `logging` property with the TransactionModule.regist call factor. The default log level is the `log`.
+
+```tsx
+@Module({
+  imports: [
+    TransactionModule.regist({
+      logging: 'debug', // logging level
+    }),
+  ],
+  controllers: [],
+  providers: [],
+})
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TransactionMiddleware).forRoutes('*');
+  }
+}
+
+// (example) console logging
+[Nest] 20212  - 2023. 07. 24. 오후 11:29:57   DEBUG [Transactional] 1690208997228|POSTGRES_CONNECTION|findAll|READ COMMITTED|REQUIRED - New Transaction
+[Nest] 20212  - 2023. 07. 24. 오후 11:46:05   DEBUG [Transactional] 1690209965305|POSTGRES_CONNECTION|create|READ COMMITTED|REQUIRED - New Transaction
 ```
 
 <br/>

@@ -1,10 +1,13 @@
 import { ClassProvider, DynamicModule, Module } from '@nestjs/common';
-import { DiscoveryModule, DiscoveryService } from '@nestjs/core';
+import { DiscoveryModule } from '@nestjs/core';
 import { AlsStore, AlsTransactionDecorator, BaseRepository } from '..';
 import { DataSourceMapService } from '../providers/data-source-map.service';
 import { TRANSACTION_MODULE_OPTION } from '../symbols/transaciton-module-option.symbol';
 import { TransactionLogger } from '../providers/transaction.logger';
-import { TransactionModuleOption } from '../interfaces/transaction-module-option.interface';
+import {
+  TransactionModuleOption,
+  TransactionModuleOptionInput,
+} from '../interfaces/transaction-module-option.interface';
 import { TypeORMTransactionService } from '../providers/transaction.service';
 import { AsyncLocalStorage } from 'async_hooks';
 import { ALS_SERVICE } from '../symbols/als-service.symbol';
@@ -27,20 +30,24 @@ import { DATA_SOURCE_MAP_SERVICE } from '../symbols/data-source-map.service.symb
   ],
 })
 export class TransactionModule {
-  static regist(options: TransactionModuleOption): DynamicModule {
+  private static readonly DEFAULT_TYPEORM_CONNECTION_NAME = 'default';
+
+  static regist(options?: TransactionModuleOptionInput): DynamicModule {
     return {
       module: TransactionModule,
       providers: [
         {
           provide: TRANSACTION_MODULE_OPTION,
-          useValue: options,
+          useValue: {
+            logging: options?.logging,
+            defaultConnectionName:
+              options?.defaultConnectionName ||
+              TransactionModule.DEFAULT_TYPEORM_CONNECTION_NAME,
+          } as TransactionModuleOption,
         },
         {
           provide: DATA_SOURCE_MAP_SERVICE,
-          useFactory: (discoveryService: DiscoveryService) => {
-            return new DataSourceMapService(discoveryService, options);
-          },
-          inject: [DiscoveryService],
+          useClass: DataSourceMapService,
         },
         {
           provide: TypeORMTransactionService,

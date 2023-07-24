@@ -13,7 +13,7 @@ export const POSTGRES_CONNECTION = 'POSTGRES_CONNECTION';
       name: POSTGRES_CONNECTION,
       type: 'postgres',
       host: '127.0.0.1',
-      port: 5432,
+      port: 5433,
       username: 'beobwoo',
       password: 'testtest',
       database: 'test_db',
