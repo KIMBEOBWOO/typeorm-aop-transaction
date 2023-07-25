@@ -15,6 +15,9 @@
   - [NEVER](#never)
   - [SUPPORTS](#supports)
 - [Logging](#logging)
+- [Testing](#testing)
+  - [Unit Test](#unit-test)
+  - [Integration Test](#integration-test)
 - [Future Support Plan](#future-support-plan)
 - [Test Coverage](#test-coverage)
 - [Referenced Libraries](#referenced-libraries)
@@ -370,6 +373,158 @@ export class AppModule {
 // (example) console logging
 [Nest] 20212  - 2023. 07. 24. 오후 11:29:57   DEBUG [Transactional] 1690208997228|POSTGRES_CONNECTION|findAll|READ COMMITTED|REQUIRED - New Transaction
 [Nest] 20212  - 2023. 07. 24. 오후 11:46:05   DEBUG [Transactional] 1690209965305|POSTGRES_CONNECTION|create|READ COMMITTED|REQUIRED - New Transaction
+```
+
+<br/>
+
+## Testing
+
+### Unit Test
+
+```tsx
+// user.service.ts
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectTransactionRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectTransactionRepository(SocialAccount)
+    private readonly socialAccountRepository: Repository<SocialAccount>,
+  ) {}
+  ...
+```
+
+The type of Transactional Repository injected through `TransactionModule.setRepository` is the same as the `Repository<EntityType>` provided by TypeORM and uses a token-based provider provided by TypeORM, so you can inject the `MockRepository` test module by `getRepositoryToken` method.
+
+```tsx
+// user.service.spec.ts
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { CreateUserDto } from '../dtos/create-user.dto';
+import { UserService } from '../service/user.service';
+
+describe('UserService', () => {
+  let service: UserService;
+  let userRepository: Repository<User>;
+  let socialAccountRepository: Repository<SocialAccount>;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UserService,
+        {
+          provide: getRepositoryToken(User),
+          useValue: {
+            create: jest.fn(),
+            save: jest.fn(),
+            ...
+          },
+        },
+        {
+          provide: getRepositoryToken(SocialAccount),
+          useValue: {
+            create: jest.fn(),
+            save: jest.fn(),
+            ...
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<UserService>(UserService);
+    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
+    socialAccountRepository = module.get<Repository<SocialAccount>>(
+      getRepositoryToken(SocialAccount),
+    );
+  });
+ ...
+```
+
+After that, you can create a typical unit test code through the `jest.Spy` object.
+
+```tsx
+it('should save User Entity and related Entities', async () => {
+  const create = jest.spyOn(userRepository, 'create').mockReturnValue(user);
+  const save = jest.spyOn(userRepository, 'save').mockResolvedValue({
+    ...user,
+    _id: 'test uuid',
+  });
+
+  await service.create(createUserDto);
+
+  expect(create).toBeCalledTimes(1);
+  expect(save).toBeCalledTimes(1);
+  ...
+});
+```
+
+<br/>
+
+### Integration Test
+
+If you have registered the `TransactionModule` through `TransactionModule.forRoot` in `AppModule`, you can perform the e2e test without any additional procedures.
+The `@TransactionalDecorator` uses [@toss/aop](https://www.npmjs.com/package/@toss/nestjs-aop) to provide transaction boundaries to methods in the Service class, so you can use a variety of integrated test methods in addition to the examples below for integrated testing with the Controller.
+
+```tsx
+@Module({
+  imports: [
+    AopModule,
+    TransactionModule.regist({
+      defaultConnectionName: <<Optional>>,
+    }),
+    DatabaseModule,
+    ...
+  ],
+  controllers: [AppController],
+})
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TransactionMiddleware).forRoutes('*');
+  }
+}
+```
+
+This example uses supertest and jest together for integration testing.
+Configure the Test Module through `AppModule` for integrated testing and organize the data in the test database.
+
+```tsx
+describe('UserController (e2e)', () => {
+  let app: INestApplication;
+  let dataSource: DataSource;
+
+  beforeAll(async () => {
+    const module = await Test.createTestingModule({
+      imports: [AppModule],
+      providers: [],
+    }).compile();
+
+    app = module.createNestApplication();
+    await app.init();
+  });
+
+  beforeEach(async () => {
+    jest.restoreAllMocks();
+
+    dataSource = app.get<DataSource>(getDataSourceToken());
+    const queryRunner = dataSource.createQueryRunner();
+    try {
+      await queryRunner.query('TRUNCATE "user" CASCADE');
+    } finally {
+      await queryRunner.release();
+    }
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('GET /user/list', () => {
+    return request(app.getHttpServer()).get('/user/list').expect(<<expedted_value>>);
+  });
+
+  ...
+});
 ```
 
 <br/>
