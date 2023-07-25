@@ -463,6 +463,70 @@ it('should save User Entity and related Entities', async () => {
 
 ### Integration Test
 
+If you have registered the `TransactionModule` through `TransactionModule.forRoot` in `AppModule`, you can perform the e2e test without any additional procedures.
+The `@TransactionalDecorator` uses [@toss/aop](https://www.npmjs.com/package/@toss/nestjs-aop) to provide transaction boundaries to methods in the Service class, so you can use a variety of integrated test methods in addition to the examples below for integrated testing with the Controller.
+
+```tsx
+@Module({
+  imports: [
+    AopModule,
+    TransactionModule.regist({
+      defaultConnectionName: <<Optional>>,
+    }),
+    DatabaseModule,
+    ...
+  ],
+  controllers: [AppController],
+})
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TransactionMiddleware).forRoutes('*');
+  }
+}
+```
+
+This example uses supertest and jest together for integration testing.
+Configure the Test Module through `AppModule` for integrated testing and organize the data in the test database.
+
+```tsx
+describe('UserController (e2e)', () => {
+  let app: INestApplication;
+  let dataSource: DataSource;
+
+  beforeAll(async () => {
+    const module = await Test.createTestingModule({
+      imports: [AppModule],
+      providers: [],
+    }).compile();
+
+    app = module.createNestApplication();
+    await app.init();
+  });
+
+  beforeEach(async () => {
+    jest.restoreAllMocks();
+
+    dataSource = app.get<DataSource>(getDataSourceToken());
+    const queryRunner = dataSource.createQueryRunner();
+    try {
+      await queryRunner.query('TRUNCATE "user" CASCADE');
+    } finally {
+      await queryRunner.release();
+    }
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('GET /user/list', () => {
+    return request(app.getHttpServer()).get('/user/list').expect(<<expedted_value>>);
+  });
+
+  ...
+});
+```
+
 <br/>
 
 ## Future Support Plan
