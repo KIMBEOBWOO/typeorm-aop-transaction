@@ -15,6 +15,9 @@
   - [NEVER](#never)
   - [SUPPORTS](#supports)
 - [Logging](#logging)
+- [Testing](#testing)
+  - [Unit Test](#unit-test)
+  - [Integration Test](#integration-test)
 - [Future Support Plan](#future-support-plan)
 - [Test Coverage](#test-coverage)
 - [Referenced Libraries](#referenced-libraries)
@@ -371,6 +374,94 @@ export class AppModule {
 [Nest] 20212  - 2023. 07. 24. 오후 11:29:57   DEBUG [Transactional] 1690208997228|POSTGRES_CONNECTION|findAll|READ COMMITTED|REQUIRED - New Transaction
 [Nest] 20212  - 2023. 07. 24. 오후 11:46:05   DEBUG [Transactional] 1690209965305|POSTGRES_CONNECTION|create|READ COMMITTED|REQUIRED - New Transaction
 ```
+
+<br/>
+
+## Testing
+
+### Unit Test
+
+```tsx
+// user.service.ts
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectTransactionRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectTransactionRepository(SocialAccount)
+    private readonly socialAccountRepository: Repository<SocialAccount>,
+  ) {}
+  ...
+```
+
+The type of Transactional Repository injected through `TransactionModule.setRepository` is the same as the `Repository<EntityType>` provided by TypeORM and uses a token-based provider provided by TypeORM, so you can inject the `MockRepository` test module by `getRepositoryToken` method.
+
+```tsx
+// user.service.spec.ts
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { CreateUserDto } from '../dtos/create-user.dto';
+import { UserService } from '../service/user.service';
+
+describe('UserService', () => {
+  let service: UserService;
+  let userRepository: Repository<User>;
+  let socialAccountRepository: Repository<SocialAccount>;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UserService,
+        {
+          provide: getRepositoryToken(User),
+          useValue: {
+            create: jest.fn(),
+            save: jest.fn(),
+            ...
+          },
+        },
+        {
+          provide: getRepositoryToken(SocialAccount),
+          useValue: {
+            create: jest.fn(),
+            save: jest.fn(),
+            ...
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<UserService>(UserService);
+    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
+    socialAccountRepository = module.get<Repository<SocialAccount>>(
+      getRepositoryToken(SocialAccount),
+    );
+  });
+ ...
+```
+
+After that, you can create a typical unit test code through the `jest.Spy` object.
+
+```tsx
+it('should save User Entity and related Entities', async () => {
+  const create = jest.spyOn(userRepository, 'create').mockReturnValue(user);
+  const save = jest.spyOn(userRepository, 'save').mockResolvedValue({
+    ...user,
+    _id: 'test uuid',
+  });
+
+  await service.create(createUserDto);
+
+  expect(create).toBeCalledTimes(1);
+  expect(save).toBeCalledTimes(1);
+  ...
+});
+```
+
+<br/>
+
+### Integration Test
 
 <br/>
 
