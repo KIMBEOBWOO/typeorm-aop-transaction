@@ -15,6 +15,9 @@
   - [NEVER](#never)
   - [SUPPORTS](#supports)
 - [Logging](#logging)
+- [Message Queue](#message-queue)
+  - [Bull](#bull)
+    - [example](#example)
 - [Testing](#testing)
   - [Unit Test](#unit-test)
   - [Integration Test](#integration-test)
@@ -52,17 +55,38 @@ import {
   controllers: [],
   providers: [],
 })
+export class AppModule {}
+```
+
+<details>
+  <summary>If it is lower than 1.6.0, you must set up Transaction Middleware</summary>
+
+```tsx
+import { MiddlewareConsumer, Module } from '@nestjs/common';
+import {
+  TransactionMiddleware,
+  TransactionModule,
+} from 'typeorm-aop-transaction';
+
+@Module({
+  imports: [TransactionModule.regist()],
+  controllers: [],
+  providers: [],
+})
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(TransactionMiddleware).forRoutes('*');
+    consumer.apply(TransactionMiddleware).forRoutes('*'); // <-- add this line
   }
 }
 ```
 
+</details>
 <br />
 
-If you used the connection name when registering a TypeORM Module, you must enter it in the `defaultConnectionName` property.
-The `defaultConnectionName` is the `name` that you defined when you initialized the TypeORM module, DataSource.
+If you used the connection name when registering a TypeORM Module, you must enter it in the `defaultConnectionName` property. The `defaultConnectionName` is the `name` that you defined when you initialized the TypeORM module, DataSource.
+
+<details>
+  <summary>how to specify TypeORM connection name </summary>
 
 ```tsx
 // app.module.ts
@@ -84,7 +108,6 @@ export class AppModule {
     consumer.apply(TransactionMiddleware).forRoutes('*');
   }
 }
-
 ...
 
 // (example) database.module.ts
@@ -105,6 +128,8 @@ export class AppModule {
 })
 export class DatabaseModule {}
 ```
+
+</details>
 
 <br/>
 
@@ -375,6 +400,45 @@ export class AppModule {
 [Nest] 20212  - 2023. 07. 24. 오후 11:46:05   DEBUG [Transactional] 1690209965305|POSTGRES_CONNECTION|create|READ COMMITTED|REQUIRED - New Transaction
 ```
 
+<br/>
+
+## Message Queue
+
+### Bull
+
+This library supports integration with the [@nestjs/bull](https://docs.nestjs.com/techniques/queues) library. However, the following are the precautions.
+If a consumer of a job registered in bull queue calls the `@Transactional` service methods, the asynchronously called method has no parent transaction, so it behaves the same as the **top-level transaction**.
+
+##### example
+
+```tsx
+// basic-queue.processor.ts
+@Processor(QueueName.BASIC_QUEUE)
+export class BasicQueueProcessor {
+  constructor(
+    @Inject(EmploymentOpportunityInjector.EMPLOYMENT_OPPORTUNITY_SERVICE)
+    private readonly eopService: EmploymentOpportunityService,
+  ) {}
+
+  @Process(AutoDeleteEmploymentOpportunityJobName)
+  async deleteEmploymentOpportunity(
+    job: Job<AutoDeleteEmploymentOpportunityJob>,
+  ) {
+    // call REQUIRED delete method
+    // has no parent transaction, so start new transaction
+    await this.eopService.delete(job.data.eopId);
+  }
+}
+
+// eop.service.ts
+@Transactional()
+delete(eopId: string) {
+  return this.eopRepository.delete(eopId);
+}
+```
+
+Suppose the delete method of the `EopService` is called during operation processing by the `BasicQueueProcessor`.
+From the perspective of a transaction enclosing the delete method, there are no parent transactions, so create a new transaction according to the rules of the `REQUIRED` propagation option.
 <br/>
 
 ## Testing
