@@ -829,4 +829,10 @@ describe('Tranaction Module', () => {
       }
     });
   });
+
+  describe('BullQueue Intergration', () => {
+    it('If the task registered in the message queue is a method with @Transactional applied, it should be executed as a root transaction', async () => {
+      await userV1Service.addJob();
+    });
+  });
 });

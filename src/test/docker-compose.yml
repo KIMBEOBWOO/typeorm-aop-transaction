@@ -11,3 +11,27 @@ services:
     volumes:
       - ./postgres:/var/lib/postgresql/data
       - ./sql/postgres:/docker-entrypoint-initdb.d
+
+  # Local Redis container
+  redis:
+    container_name: redis
+    image: redis:latest
+    hostname: redis-local
+    ports:
+      - 6379:6379
+    # - Double dollars, so that the variable is not expanded by Docker Compose
+    # - Surround by quotes, so that the shell does not split the password
+    # - The ${variable:?message} syntax causes shell to exit with a non-zero
+    #   code and print a message, when the variable is not set or empty
+    command:
+      [
+        "redis-server",
+        "/usr/local/etc/redis/redis.conf",
+        "--requirepass",
+        "testtest"
+      ]
+    restart: always
+    volumes:
+      - ./redis/data:/data
+      - ./redis/conf/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/acl/users.acl:/etc/redis/users.acl

@@ -7,4 +7,6 @@ export const getMockAlsService = (
   ({
     run: jest.fn(),
     getStore: jest.fn(),
+    enterWith: jest.fn(),
+    ...mockData,
   } as any);
