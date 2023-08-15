@@ -1,6 +1,6 @@
 {
   "name": "typeorm-aop-transaction",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "description": "Modules that allow transactions of TypeORM 0.3 version to be applied from an AOP perspective",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

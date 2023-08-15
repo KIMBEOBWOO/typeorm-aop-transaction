@@ -212,7 +212,7 @@ export class AlsTransactionDecorator
               this.transactionService.createConnection(connectionName);
 
             this.logger.debug(
-              'No Transaction',
+              'Without Transaction',
               store._id,
               notTransactionalQueryRunner.connection.name,
               methodName,
@@ -222,18 +222,21 @@ export class AlsTransactionDecorator
 
             return await this.alsService.run(
               {
-                // 스토어 쿼리러너 세팅
                 _id: store._id,
                 queryRunner: notTransactionalQueryRunner,
                 parentPropagtionContext: {
-                  [propagation]: true, // REQUIRES_NEW 가 부모에 진행중임을 설정
+                  [propagation]: true,
                 },
               },
               async () => {
-                return await this.transactionService.runInTransaction(
-                  method,
-                  args,
-                );
+                try {
+                  return await this.transactionService.runInTransaction(
+                    method,
+                    args,
+                  );
+                } finally {
+                  await notTransactionalQueryRunner.release();
+                }
               },
             );
           }
@@ -243,6 +246,7 @@ export class AlsTransactionDecorator
             storeQueryRunner.isTransactionActive &&
             !parentPropagtionContext[PROPAGATION.REQUIRES_NEW]
           ) {
+            /** Join Transaction */
             this.logger.debug(
               'Join Transaction',
               store._id,
@@ -254,14 +258,14 @@ export class AlsTransactionDecorator
 
             return this.transactionService.runInTransaction(method, args);
           } else {
-            // 진행중인 트랜잭션이 없으므로 새롭게 생성
-            const queryRunner =
+            /** Without Transaction */
+            const notTransactionalQueryRunner =
               this.transactionService.createConnection(connectionName);
 
             this.logger.debug(
               'Without Transaction',
               store._id,
-              queryRunner.connection.name,
+              notTransactionalQueryRunner.connection.name,
               methodName,
               isolationLevel,
               propagation,
@@ -269,18 +273,21 @@ export class AlsTransactionDecorator
 
             return await this.alsService.run(
               {
-                // 스토어 쿼리러너 세팅
                 _id: store._id,
-                queryRunner: queryRunner,
+                queryRunner: notTransactionalQueryRunner,
                 parentPropagtionContext: {
-                  [propagation]: true, // REQUIRES_NEW 가 부모에 진행중임을 설정
+                  [propagation]: true,
                 },
               },
               async () => {
-                return await this.transactionService.runInTransaction(
-                  method,
-                  args,
-                );
+                try {
+                  return await this.transactionService.runInTransaction(
+                    method,
+                    args,
+                  );
+                } finally {
+                  await notTransactionalQueryRunner.release();
+                }
               },
             );
           }
