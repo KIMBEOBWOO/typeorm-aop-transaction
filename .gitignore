@@ -131,3 +131,4 @@ dist
 
 # Test docker
 src/test/postgres
+src/test/redis

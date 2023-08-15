@@ -4,6 +4,7 @@ import { TransactionModule } from '../../../modules/transaciton.module';
 import { TransactionMiddleware } from '../../../providers/transaction.middleware';
 import { DatabaseModule, POSTGRES_CONNECTION } from './database.module';
 import { UserModule } from './user.module';
+import { QueueModule } from './queue.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { UserModule } from './user.module';
       defaultConnectionName: POSTGRES_CONNECTION,
     }),
     UserModule,
+    QueueModule,
   ],
   controllers: [],
   providers: [],

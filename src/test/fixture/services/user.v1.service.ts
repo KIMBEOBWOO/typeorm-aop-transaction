@@ -1,4 +1,6 @@
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
+import { Queue } from 'bull';
 import { Repository } from 'typeorm';
 import { PROPAGATION } from '../../../const/propagation';
 import { InjectTransactionRepository } from '../../../decorators/inject-transaction-repository.decorator';
@@ -15,6 +17,8 @@ export class UserV1Service {
   constructor(
     @InjectTransactionRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectQueue('TEST_QUEUE')
+    private readonly queue: Queue,
   ) {}
 
   @Transactional()
@@ -110,5 +114,10 @@ export class UserV1Service {
     });
 
     return result;
+  }
+
+  @Transactional()
+  addJob() {
+    return this.queue.add('TEST_JOB', new Date());
   }
 }
