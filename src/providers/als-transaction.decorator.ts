@@ -24,20 +24,20 @@ export class AlsTransactionDecorator
 
   wrap({ metadata, method, methodName }: WrapParams<any, TransactionOptions>) {
     return async (...args: any) => {
-      const store = this.alsService.getStore();
+      let store: AlsStore | undefined = this.alsService.getStore();
 
-      if (!store) {
-        throw new Error(
-          'AlsTransactionDecorator requires async storage to be initialized. Please check if TransactionMiddleware is registered as a consumer in the root module',
-        );
+      if (store === undefined) {
+        /** store 가 존재하지 않는 경우 (트랜잭션 루트) */
+        const defaultStore: AlsStore = {
+          _id: Date.now().toString(),
+          parentPropagtionContext: {},
+        };
+
+        store = defaultStore;
+        this.alsService.enterWith(store);
       }
 
-      const {
-        // 스토어에 포함된 쿼리러너 확인
-        queryRunner: storeQueryRunner,
-        // 상위에 NESTED 가 있는지 확인
-        parentPropagtionContext,
-      } = store;
+      const { queryRunner: storeQueryRunner, parentPropagtionContext } = store;
 
       // 커넥션 선택 설정
       const connectionName = metadata?.connectionName;

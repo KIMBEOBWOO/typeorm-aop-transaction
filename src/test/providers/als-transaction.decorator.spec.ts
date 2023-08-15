@@ -76,22 +76,25 @@ describe('AlsTransactionDecorator', () => {
   });
 
   describe('wrap', () => {
-    it('Returns an Error if AsyncStorage is undefined', async () => {
+    it('Set DefaultStore and enter als with DefaultStore if AsyncStorage is undefined', async () => {
       jest.spyOn(alsService, 'getStore').mockReturnValue(undefined);
+      const enterWith = jest.spyOn(alsService, 'enterWith');
+      const args = [1, 2, 3, 4];
 
-      await expect(
-        async () =>
-          await service.wrap({
-            metadata: {},
-            method: () => true,
-            methodName: 'test',
-            instance: null as never,
-          })(),
-      ).rejects.toThrow(
-        new Error(
-          'AlsTransactionDecorator requires async storage to be initialized. Please check if TransactionMiddleware is registered as a consumer in the root module',
-        ),
-      );
+      (
+        await service.wrap({
+          metadata: {},
+          method: () => true,
+          methodName: 'test',
+          instance: null as never,
+        })
+      )(args);
+
+      expect(enterWith).toBeCalledTimes(1);
+      expect(enterWith).toBeCalledWith({
+        _id: expect.any(String),
+        parentPropagtionContext: {},
+      });
     });
 
     it('Returns an Error if propagation option is not supported', async () => {
