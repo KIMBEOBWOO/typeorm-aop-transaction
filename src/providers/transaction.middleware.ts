@@ -3,6 +3,9 @@ import { AsyncLocalStorage } from 'async_hooks';
 import { AlsStore } from '../interfaces/als-store.interface';
 import { ALS_SERVICE } from '../symbols/als-service.symbol';
 
+/**
+ * @deprecated You no longer need to apply Transaction Middleware on the app(root) module.
+ */
 @Injectable()
 export class TransactionMiddleware implements NestMiddleware {
   constructor(
